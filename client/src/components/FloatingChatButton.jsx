@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { api } from "../api";
 import { LuMessageCircleMore } from "react-icons/lu";
+import { socket } from "../socket";
 
 export default function FloatingChatWidget() {
   const [open, setOpen] = useState(false);
@@ -20,12 +21,17 @@ export default function FloatingChatWidget() {
 
   const listRef = useRef(null);
 
-  const socket = useMemo(() => {
-    return io("http://localhost:4000", {
-      auth: { token },
-      withCredentials: true,
-    });
-  }, [token]);
+const socket = useMemo(() => {
+  const SOCKET_URL =
+    import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
+
+  return io(SOCKET_URL, {
+    auth: { token },
+    withCredentials: true,
+    transports: ["websocket", "polling"],
+  });
+}, [token]);
+
 
   const scrollToBottom = () => {
     const el = listRef.current;
