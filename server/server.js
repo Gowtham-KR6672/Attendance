@@ -33,18 +33,28 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(cookieParser());
 
+// =====================================================
+// ✅ CORS (Express)  ✅ FIXED (comma missing earlier)
+// =====================================================
+const ALLOWED_ORIGINS = [
+  process.env.CLIENT_URL,               // e.g. https://attendance-lyart-pi.vercel.app
+  "http://localhost:5173",
+  "https://attendance-lyart-pi.vercel.app",
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: [
-  process.env.CLIENT_URL,
-  "http://localhost:5173",
-  "https://attendance-lyart-pi.vercel.app"
-]
+    origin: ALLOWED_ORIGINS,
     credentials: true,
   })
 );
 
+// If you want to be extra-safe for preflight:
+app.options("*", cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+
+// =====================================================
 // ✅ RATE LIMIT (avoid blocking login too quickly)
+// =====================================================
 const limiter = rateLimit({
   windowMs: 60 * 1000,
   max: 240,
@@ -94,18 +104,24 @@ const canChat = (meRole, otherRole) => {
 };
 
 // =====================================================
-// ✅ Auto delete chats older than 3 weeks (21 days)
+// ✅ Auto delete chats older than 21 days
 // Runs once at start + every 24 hours
 // =====================================================
 const CHAT_RETENTION_DAYS = 21;
 
 async function cleanupOldChats() {
   try {
-    const cutoff = new Date(Date.now() - CHAT_RETENTION_DAYS * 24 * 60 * 60 * 1000);
+    const cutoff = new Date(
+      Date.now() - CHAT_RETENTION_DAYS * 24 * 60 * 60 * 1000
+    );
     const res = await ChatMessage.deleteMany({
       createdAt: { $lt: cutoff },
     });
-    console.log(`🧹 Chat cleanup: deleted ${res.deletedCount || 0} messages older than ${CHAT_RETENTION_DAYS} days`);
+    console.log(
+      `🧹 Chat cleanup: deleted ${
+        res.deletedCount || 0
+      } messages older than ${CHAT_RETENTION_DAYS} days`
+    );
   } catch (err) {
     console.error("❌ Chat cleanup failed:", err?.message || err);
   }
@@ -123,11 +139,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      process.env.CLIENT_URL,
-      "http://localhost:5173",
-      "https://attendance-lyart-pi.vercel.app",
-    ],
+    origin: ALLOWED_ORIGINS,
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -155,12 +167,14 @@ io.on("connection", (socket) => {
       const msgText = String(text || "").trim();
 
       if (!msgText) return cb?.({ ok: false, message: "Message empty" });
-      if (!mongoose.isValidObjectId(toAdminId)) return cb?.({ ok: false, message: "Invalid receiver ID" });
+      if (!mongoose.isValidObjectId(toAdminId))
+        return cb?.({ ok: false, message: "Invalid receiver ID" });
 
       const to = await Admin.findById(toAdminId, { role: 1 });
       if (!to) return cb?.({ ok: false, message: "User not found" });
 
-      if (!canChat(from.role, to.role)) return cb?.({ ok: false, message: "Forbidden" });
+      if (!canChat(from.role, to.role))
+        return cb?.({ ok: false, message: "Forbidden" });
 
       // ✅ Save as SENT
       let msg = await ChatMessage.create({
@@ -179,7 +193,9 @@ io.on("connection", (socket) => {
       msg.deliveredAt = new Date();
       await msg.save();
 
-      io.to(`admin:${from._id}`).emit("chat:delivered", { messageId: msg._id });
+      io.to(`admin:${from._id}`).emit("chat:delivered", {
+        messageId: msg._id,
+      });
 
       cb?.({ ok: true, messageId: msg._id });
     } catch (e) {
@@ -214,4 +230,4 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
