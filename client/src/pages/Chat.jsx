@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { io } from "socket.io-client";
 import { api } from "../api";
 import { X } from "lucide-react";
+import { socket } from "../socket";
+
 
 export default function Chat({ open, setOpen, setUnreadOutside }) {
   const [users, setUsers] = useState([]);
@@ -14,11 +16,16 @@ export default function Chat({ open, setOpen, setUnreadOutside }) {
   const myId = localStorage.getItem("adminId");
 
   const socket = useMemo(() => {
-    return io("http://localhost:4000", {
-      auth: { token },
-      withCredentials: true,
-    });
-  }, [token]);
+  const SOCKET_URL =
+    import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
+
+  return io(SOCKET_URL, {
+    auth: { token },
+    withCredentials: true,
+    transports: ["websocket", "polling"],
+  });
+}, [token]);
+
 
   // ✅ load unread count from backend
   const loadUnread = async () => {
