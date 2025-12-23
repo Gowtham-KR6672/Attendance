@@ -62,7 +62,7 @@ export default function EmployeeTable() {
   const [designation, setDesignation] = useState("");
   const [shift, setShift] = useState("");
   const [teamType, setTeamType] = useState("");
-  const [department, setDepartment] = useState("");
+  const [department, setDepartment] = useState(""); // ✅ already exists
   const [personalEmail, setPersonalEmail] = useState("");
   const [officialEmail, setOfficialEmail] = useState("");
   const [personalPhone, setPersonalPhone] = useState("");
@@ -152,7 +152,7 @@ export default function EmployeeTable() {
       designation,
       shift,
       teamType,
-      department,
+      department, // ✅ now will be filled from UI
       personalEmail,
       officialEmail,
       personalPhone,
@@ -192,7 +192,7 @@ export default function EmployeeTable() {
     setDesignation(e.designation || "");
     setShift(e.shift || "");
     setTeamType(e.teamType || "");
-    setDepartment(e.department || "");
+    setDepartment(e.department || ""); // ✅ read existing
     setPersonalEmail(e.personalEmail || "");
     setOfficialEmail(e.officialEmail || "");
     setPersonalPhone(e.personalPhone || "");
@@ -257,7 +257,7 @@ export default function EmployeeTable() {
       { key: "designation", title: "Designation" },
       { key: "shift", title: "Shift" },
       { key: "teamType", title: "Team" },
-      { key: "department", title: "Department" },
+      { key: "department", title: "Department" }, // ✅ table already has it
       { key: "personalEmail", title: "Personal Email" },
       { key: "officialEmail", title: "Official Email" },
       { key: "personalPhone", title: "Personal Phone" },
@@ -269,19 +269,14 @@ export default function EmployeeTable() {
     []
   );
 
-  // ✅ NEW: sort employees so NEWLY ADDED appears LAST
+  // ✅ sort employees so NEWLY ADDED appears LAST
   const employeesSorted = useMemo(() => {
     const arr = [...employees];
 
-    // If backend provides createdAt, sort by it
     if (arr.some((e) => e.createdAt)) {
-      arr.sort(
-        (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0)
-      ); // old -> new
+      arr.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
       return arr;
     }
-
-    // fallback: keep as-is
     return arr;
   }, [employees]);
 
@@ -515,7 +510,8 @@ export default function EmployeeTable() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            {/* ✅ UPDATED: add Department field */}
+            <div className="grid grid-cols-4 gap-3">
               <div>
                 <div className="label">Designation</div>
                 <select
@@ -531,6 +527,7 @@ export default function EmployeeTable() {
                   ))}
                 </select>
               </div>
+
               <div>
                 <div className="label">Shift</div>
                 <select
@@ -546,6 +543,7 @@ export default function EmployeeTable() {
                   ))}
                 </select>
               </div>
+
               <div>
                 <div className="label">Team</div>
                 <select
@@ -560,6 +558,16 @@ export default function EmployeeTable() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <div className="label">Department</div>
+                <input
+                  className="input w-full"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  placeholder="e.g., Production / HR / IT"
+                />
               </div>
             </div>
 
