@@ -404,11 +404,11 @@ export default function ReportPage() {
 
               {/* ✅ Circles like your sample */}
               <div className="flex items-center gap-6">
-                <CircleStat label="Overall Lag" value={overallAvg.lag} color="#17d406ff" size={68} stroke={4} />
+                <CircleStat label="Overall Lag" value={overallAvg.lag} color="#d1131cff" size={68} stroke={4} />
                 <CircleStat
                   label="Overall Achieved"
                   value={overallAvg.achieved}
-                  color="#d1131cff"
+                  color="#17d406ff"
                   size={68}
                   stroke={4}
                 />
@@ -667,3 +667,4 @@ export default function ReportPage() {
     </div>
   );
 }
+
