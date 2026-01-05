@@ -580,8 +580,8 @@ export default function ReportPage() {
                   }}
                   title="How many different dates are available for this process in the selected range"
                 >
-                  Available entries: {availableTrendCount} {availableTrendCount === 1 ? "date" : "dates"}
-                  {availableTrendCount > 3 ? " (showing last 3)" : ""}
+                  Available entries: {availableTrendCount} {availableTrendCount === 1 ? "date" : "Data"}
+                  {availableTrendCount > 3 ? " (showing last 3 Data)" : ""}
                 </div>
               </div>
             </div>
