@@ -36,11 +36,20 @@ const fmtDDMMYYYY = (d) => {
   return `${dd}-${mm}-${yy}`;
 };
 
-/** scope filter */
+/** ✅ UPDATED scope filter
+ * super, admin, admin_tl => see ALL data
+ * (no createdBy filter)
+ */
 const reportScopeFilter = (user) => {
-  if (!user || user.role === "super") return {};
-  if (user.role === "admin") return { createdBy: user.sub };
-  if (user.role === "admin_tl") return {};
+  if (!user) return {};
+
+  const role = String(user.role || "").toLowerCase();
+
+  // allow these roles to view everything
+  if (role === "super" || role === "admin" || role === "admin_tl") return {};
+
+  // default: no extra scope restriction (keep as-is)
+  // If you have other roles later, you can restrict them here.
   return {};
 };
 
