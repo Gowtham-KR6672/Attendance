@@ -62,7 +62,7 @@ export default function EmployeeTable() {
   const [designation, setDesignation] = useState("");
   const [shift, setShift] = useState("");
   const [teamType, setTeamType] = useState("");
-  const [department, setDepartment] = useState(""); // ✅ already exists
+  const [department, setDepartment] = useState("");
   const [personalEmail, setPersonalEmail] = useState("");
   const [officialEmail, setOfficialEmail] = useState("");
   const [personalPhone, setPersonalPhone] = useState("");
@@ -152,7 +152,7 @@ export default function EmployeeTable() {
       designation,
       shift,
       teamType,
-      department, // ✅ now will be filled from UI
+      department,
       personalEmail,
       officialEmail,
       personalPhone,
@@ -192,7 +192,7 @@ export default function EmployeeTable() {
     setDesignation(e.designation || "");
     setShift(e.shift || "");
     setTeamType(e.teamType || "");
-    setDepartment(e.department || ""); // ✅ read existing
+    setDepartment(e.department || "");
     setPersonalEmail(e.personalEmail || "");
     setOfficialEmail(e.officialEmail || "");
     setPersonalPhone(e.personalPhone || "");
@@ -201,9 +201,7 @@ export default function EmployeeTable() {
     setPresentLocation(e.presentLocation || "");
     setPermanentLocation(e.permanentLocation || "");
 
-    document
-      .getElementById("employee-form")
-      ?.scrollIntoView({ behavior: "smooth" });
+    document.getElementById("employee-form")?.scrollIntoView({ behavior: "smooth" });
   };
 
   const onDelete = async (e) => {
@@ -257,7 +255,7 @@ export default function EmployeeTable() {
       { key: "designation", title: "Designation" },
       { key: "shift", title: "Shift" },
       { key: "teamType", title: "Team" },
-      { key: "department", title: "Department" }, // ✅ table already has it
+      { key: "department", title: "Department" },
       { key: "personalEmail", title: "Personal Email" },
       { key: "officialEmail", title: "Official Email" },
       { key: "personalPhone", title: "Personal Phone" },
@@ -272,7 +270,6 @@ export default function EmployeeTable() {
   // ✅ sort employees so NEWLY ADDED appears LAST
   const employeesSorted = useMemo(() => {
     const arr = [...employees];
-
     if (arr.some((e) => e.createdAt)) {
       arr.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
       return arr;
@@ -349,6 +346,13 @@ export default function EmployeeTable() {
     }
   };
 
+  // ✅ helper: show admin teams (new multi-field) in dropdown label
+  const adminTeamsLabel = (a) => {
+    const arr = Array.isArray(a.allowedTeamTypes) ? a.allowedTeamTypes : [];
+    if (arr.length) return arr.join(", ");
+    return a.allowedTeamType || "No Team";
+  };
+
   return (
     <>
       {/* ✅ SUCCESS MODAL */}
@@ -363,9 +367,7 @@ export default function EmployeeTable() {
           >
             <div className="p-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-                  ✅
-                </div>
+                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">✅</div>
                 <div>
                   <div className="font-semibold text-green-800">Success</div>
                   <div className="text-sm text-gray-700">{successText}</div>
@@ -373,10 +375,7 @@ export default function EmployeeTable() {
               </div>
 
               <div className="mt-4 flex justify-end gap-2">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => setSuccessOpen(false)}
-                >
+                <button className="btn btn-primary" onClick={() => setSuccessOpen(false)}>
                   OK
                 </button>
               </div>
@@ -397,9 +396,7 @@ export default function EmployeeTable() {
           >
             <div className="p-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-                  ❌
-                </div>
+                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">❌</div>
                 <div>
                   <div className="font-semibold text-red-800">Error</div>
                   <div className="text-sm text-gray-700">{errorText}</div>
@@ -407,10 +404,7 @@ export default function EmployeeTable() {
               </div>
 
               <div className="mt-4 flex justify-end gap-2">
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setErrorOpen(false)}
-                >
+                <button className="btn btn-outline" onClick={() => setErrorOpen(false)}>
                   Close
                 </button>
               </div>
@@ -422,9 +416,7 @@ export default function EmployeeTable() {
       <div className="grid grid-cols-12 gap-6">
         {/* LEFT: Add / Update form */}
         <div className="card col-span-12 lg:col-span-4" id="employee-form">
-          <h3 className="font-semibold mb-4">
-            {editingId ? "Update Employee" : "Add Employee"}
-          </h3>
+          <h3 className="font-semibold mb-4">{editingId ? "Update Employee" : "Add Employee"}</h3>
 
           <form className="space-y-3" onSubmit={onSubmit}>
             <div>
@@ -434,12 +426,7 @@ export default function EmployeeTable() {
 
             <div>
               <div className="label">Name</div>
-              <input
-                className="input w-full"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
+              <input className="input w-full" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
 
             <div>
@@ -456,11 +443,7 @@ export default function EmployeeTable() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="label">Gender</div>
-                <select
-                  className="select w-full"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                >
+                <select className="select w-full" value={gender} onChange={(e) => setGender(e.target.value)}>
                   <option value="">Select...</option>
                   {GENDER.map((g) => (
                     <option key={g} value={g}>
@@ -483,12 +466,7 @@ export default function EmployeeTable() {
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <div className="label">DOB</div>
-                <input
-                  type="date"
-                  className="input w-full"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                />
+                <input type="date" className="input w-full" value={dob} onChange={(e) => setDob(e.target.value)} />
               </div>
               <div>
                 <div className="label">Cert. DOB</div>
@@ -501,24 +479,14 @@ export default function EmployeeTable() {
               </div>
               <div>
                 <div className="label">Date of Joining</div>
-                <input
-                  type="date"
-                  className="input w-full"
-                  value={doj}
-                  onChange={(e) => setDoj(e.target.value)}
-                />
+                <input type="date" className="input w-full" value={doj} onChange={(e) => setDoj(e.target.value)} />
               </div>
             </div>
 
-            {/* ✅ UPDATED: add Department field */}
             <div className="grid grid-cols-4 gap-3">
               <div>
                 <div className="label">Designation</div>
-                <select
-                  className="select w-full"
-                  value={designation}
-                  onChange={(e) => setDesignation(e.target.value)}
-                >
+                <select className="select w-full" value={designation} onChange={(e) => setDesignation(e.target.value)}>
                   <option value="">Select...</option>
                   {DESIGNATIONS.map((d) => (
                     <option key={d} value={d}>
@@ -530,11 +498,7 @@ export default function EmployeeTable() {
 
               <div>
                 <div className="label">Shift</div>
-                <select
-                  className="select w-full"
-                  value={shift}
-                  onChange={(e) => setShift(e.target.value)}
-                >
+                <select className="select w-full" value={shift} onChange={(e) => setShift(e.target.value)}>
                   <option value="">Select...</option>
                   {SHIFTS.map((s) => (
                     <option key={s} value={s}>
@@ -546,11 +510,7 @@ export default function EmployeeTable() {
 
               <div>
                 <div className="label">Team</div>
-                <select
-                  className="select w-full"
-                  value={teamType}
-                  onChange={(e) => setTeamType(e.target.value)}
-                >
+                <select className="select w-full" value={teamType} onChange={(e) => setTeamType(e.target.value)}>
                   <option value="">Select...</option>
                   {TEAMS.map((t) => (
                     <option key={t} value={t}>
@@ -574,49 +534,29 @@ export default function EmployeeTable() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="label">Personal Email</div>
-                <input
-                  className="input w-full"
-                  value={personalEmail}
-                  onChange={(e) => setPersonalEmail(e.target.value)}
-                />
+                <input className="input w-full" value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} />
               </div>
               <div>
                 <div className="label">Official Email</div>
-                <input
-                  className="input w-full"
-                  value={officialEmail}
-                  onChange={(e) => setOfficialEmail(e.target.value)}
-                />
+                <input className="input w-full" value={officialEmail} onChange={(e) => setOfficialEmail(e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <div className="label">Personal Contact No.</div>
-                <input
-                  className="input w-full"
-                  value={personalPhone}
-                  onChange={(e) => setPersonalPhone(e.target.value)}
-                />
+                <input className="input w-full" value={personalPhone} onChange={(e) => setPersonalPhone(e.target.value)} />
               </div>
               <div>
                 <div className="label">Parent Contact No.</div>
-                <input
-                  className="input w-full"
-                  value={parentPhone}
-                  onChange={(e) => setParentPhone(e.target.value)}
-                />
+                <input className="input w-full" value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <div className="label">Laptop Status</div>
-                <select
-                  className="select w-full"
-                  value={laptopStatus}
-                  onChange={(e) => setLaptopStatus(e.target.value)}
-                >
+                <select className="select w-full" value={laptopStatus} onChange={(e) => setLaptopStatus(e.target.value)}>
                   <option value="">Select...</option>
                   {LAPTOP_STATUS.map((x) => (
                     <option key={x} value={x}>
@@ -648,12 +588,7 @@ export default function EmployeeTable() {
                 {busy ? "Saving…" : editingId ? "Update" : "Save"}
               </button>
               {editingId && (
-                <button
-                  type="button"
-                  className="btn btn-outline"
-                  onClick={resetForm}
-                  disabled={busy}
-                >
+                <button type="button" className="btn btn-outline" onClick={resetForm} disabled={busy}>
                   Cancel
                 </button>
               )}
@@ -687,10 +622,7 @@ export default function EmployeeTable() {
               <tbody>
                 {!employeesSorted.length && (
                   <tr className="border-t">
-                    <td
-                      className="py-6 px-3 text-gray-500"
-                      colSpan={columns.length + (canTransfer ? 2 : 1)}
-                    >
+                    <td className="py-6 px-3 text-gray-500" colSpan={columns.length + (canTransfer ? 2 : 1)}>
                       No employees yet.
                     </td>
                   </tr>
@@ -721,15 +653,12 @@ export default function EmployeeTable() {
                             <option value="">Transfer to…</option>
                             {admins.map((a) => (
                               <option key={a._id} value={a._id}>
-                                {a.email} ({a.allowedTeamType || "No Team"})
+                                {a.email} ({adminTeamsLabel(a)})
                               </option>
                             ))}
                           </select>
 
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => transferEmployee(e._id)}
-                          >
+                          <button className="btn btn-outline btn-sm" onClick={() => transferEmployee(e._id)}>
                             Move
                           </button>
                         </div>
@@ -738,16 +667,10 @@ export default function EmployeeTable() {
 
                     <td className="py-2 px-3">
                       <div className="flex gap-2">
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => onEdit(e)}
-                        >
+                        <button className="btn btn-outline btn-sm" onClick={() => onEdit(e)}>
                           Edit
                         </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => onDelete(e)}
-                        >
+                        <button className="btn btn-danger btn-sm" onClick={() => onDelete(e)}>
                           Delete
                         </button>
                       </div>

@@ -20,14 +20,12 @@ export default function AdminManager() {
   const [showCreatePwd, setShowCreatePwd] = useState(false);
 
   const [newRole, setNewRole] = useState("admin");
-  const [teamType, setTeamType] = useState(""); // admin single
-  const [teamTypes, setTeamTypes] = useState([]); // admin_tl multi
+  const [teamTypes, setTeamTypes] = useState([]); // ✅ admin + admin_tl multi
   const [shift, setShift] = useState("");
 
   // edit mode
   const [editingId, setEditingId] = useState(null);
   const [editRole, setEditRole] = useState("admin");
-  const [editTeamType, setEditTeamType] = useState("");
   const [editTeamTypes, setEditTeamTypes] = useState([]);
   const [editShift, setEditShift] = useState("");
 
@@ -69,7 +67,6 @@ export default function AdminManager() {
     setPassword("");
     setShowCreatePwd(false);
     setNewRole("admin");
-    setTeamType("");
     setTeamTypes([]);
     setShift("");
   };
@@ -80,12 +77,8 @@ export default function AdminManager() {
     // ✅ Validation using dialog box (no alert)
     if (!email || !password) return openError("Email & Password required");
 
-    if (newRole === "admin" && !teamType) {
-      return openError("Team is required for Admin");
-    }
-
-    if (newRole === "admin_tl" && (!teamTypes || teamTypes.length === 0)) {
-      return openError("Select at least 1 Team for Admin TL");
+    if ((newRole === "admin" || newRole === "admin_tl") && (!teamTypes || teamTypes.length === 0)) {
+      return openError(`Select at least 1 Team for ${newRole === "admin" ? "Admin" : "Admin TL"}`);
     }
 
     try {
@@ -94,11 +87,8 @@ export default function AdminManager() {
         password,
         role: newRole,
 
-        // admin
-        allowedTeamType: newRole === "admin" ? teamType : undefined,
-
-        // admin_tl
-        allowedTeamTypes: newRole === "admin_tl" ? teamTypes : undefined,
+        // ✅ admin + admin_tl both send allowedTeamTypes
+        allowedTeamTypes: newRole === "admin" || newRole === "admin_tl" ? teamTypes : undefined,
 
         // shift optional (ignored for super)
         allowedShift: newRole === "super" ? undefined : shift || undefined,
@@ -107,7 +97,9 @@ export default function AdminManager() {
       openSuccess(
         newRole === "admin_tl"
           ? "Admin TL created successfully ✅"
-          : "Admin created successfully ✅"
+          : newRole === "admin"
+          ? "Admin created successfully ✅"
+          : "Super Admin created successfully ✅"
       );
 
       resetCreate();
@@ -120,8 +112,16 @@ export default function AdminManager() {
   const startEdit = (a) => {
     setEditingId(a._id);
     setEditRole(a.role || "admin");
-    setEditTeamType(a.allowedTeamType || "");
-    setEditTeamTypes(Array.isArray(a.allowedTeamTypes) ? a.allowedTeamTypes : []);
+
+    // ✅ for admin/admin_tl: use allowedTeamTypes if present, else fallback to allowedTeamType
+    const teams =
+      Array.isArray(a.allowedTeamTypes) && a.allowedTeamTypes.length
+        ? a.allowedTeamTypes
+        : a.allowedTeamType
+        ? [a.allowedTeamType]
+        : [];
+    setEditTeamTypes(teams);
+
     setEditShift(a.allowedShift || "");
 
     // reset password field each time edit opens
@@ -132,7 +132,6 @@ export default function AdminManager() {
   const cancelEdit = () => {
     setEditingId(null);
     setEditRole("admin");
-    setEditTeamType("");
     setEditTeamTypes([]);
     setEditShift("");
     setEditPassword("");
@@ -142,19 +141,17 @@ export default function AdminManager() {
   const saveEdit = async (id, rowRole) => {
     if (rowRole === "super") return;
 
-    if (editRole === "admin" && !editTeamType) {
-      return openError("Team is required for Admin");
-    }
-
-    if (editRole === "admin_tl" && (!editTeamTypes || editTeamTypes.length === 0)) {
-      return openError("Select at least 1 Team for Admin TL");
+    if ((editRole === "admin" || editRole === "admin_tl") && (!editTeamTypes || editTeamTypes.length === 0)) {
+      return openError(`Select at least 1 Team for ${editRole === "admin" ? "Admin" : "Admin TL"}`);
     }
 
     try {
       await api.put(`/admins/${id}`, {
         role: editRole,
-        allowedTeamType: editRole === "admin" ? editTeamType : undefined,
-        allowedTeamTypes: editRole === "admin_tl" ? editTeamTypes : undefined,
+
+        // ✅ admin + admin_tl both use allowedTeamTypes
+        allowedTeamTypes: editRole === "admin" || editRole === "admin_tl" ? editTeamTypes : undefined,
+
         allowedShift: editRole === "super" ? undefined : editShift || undefined,
 
         // ✅ only send if typed
@@ -185,12 +182,30 @@ export default function AdminManager() {
   const isSuperRow = (a) => a.role === "super";
 
   const renderTeamsText = (a) => {
-    if (a.role === "admin_tl") {
-      const arr = Array.isArray(a.allowedTeamTypes) ? a.allowedTeamTypes : [];
-      return arr.join(", ");
-    }
+    const arr = Array.isArray(a.allowedTeamTypes) ? a.allowedTeamTypes : [];
+    if (arr.length) return arr.join(", ");
     return a.allowedTeamType || "";
   };
+
+  const TeamSelect = ({ value, onChange, disabled }) => (
+    <select
+      className="select w-full"
+      multiple
+      value={value}
+      onChange={(e) => {
+        const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
+        onChange(selected);
+      }}
+      disabled={disabled}
+      style={{ minHeight: 40 }}
+    >
+      {TEAM_TYPES.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
+  );
 
   return (
     <div className="space-y-4">
@@ -206,9 +221,7 @@ export default function AdminManager() {
           >
             <div className="p-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">
-                  ✅
-                </div>
+                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">✅</div>
                 <div>
                   <div className="font-semibold text-green-800">Success</div>
                   <div className="text-sm text-gray-700">{successText}</div>
@@ -236,9 +249,7 @@ export default function AdminManager() {
           >
             <div className="p-4">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
-                  ❌
-                </div>
+                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">❌</div>
                 <div>
                   <div className="font-semibold text-red-800">Error</div>
                   <div className="text-sm text-gray-700">{errorText}</div>
@@ -273,11 +284,7 @@ export default function AdminManager() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <button
-                type="button"
-                className="btn btn-outline"
-                onClick={() => setShowCreatePwd((v) => !v)}
-              >
+              <button type="button" className="btn btn-outline" onClick={() => setShowCreatePwd((v) => !v)}>
                 {showCreatePwd ? "Hide" : "Show"}
               </button>
             </div>
@@ -291,7 +298,6 @@ export default function AdminManager() {
               onChange={(e) => {
                 const r = e.target.value;
                 setNewRole(r);
-                setTeamType("");
                 setTeamTypes([]);
               }}
             >
@@ -307,44 +313,17 @@ export default function AdminManager() {
           <div>
             <div className="label">Team</div>
 
-            {newRole === "admin_tl" ? (
-              <select
-                className="select w-full"
-                multiple
-                value={teamTypes}
-                onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-                  setTeamTypes(selected);
-                }}
-                disabled={newRole === "super"}
-                style={{ minHeight: 40 }}
-              >
-                {TEAM_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+            {(newRole === "admin" || newRole === "admin_tl") ? (
+              <>
+                <TeamSelect value={teamTypes} onChange={setTeamTypes} disabled={newRole === "super"} />
+                <div className="text-xs text-gray-500 mt-1">
+                  Tip: hold Ctrl (Windows) / Cmd (Mac) to select multiple.
+                </div>
+              </>
             ) : (
-              <select
-                className="select w-full"
-                value={teamType}
-                onChange={(e) => setTeamType(e.target.value)}
-                disabled={newRole === "super"}
-              >
-                <option value="">Select...</option>
-                {TEAM_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
+              <select className="select w-full" disabled>
+                <option>(Not applicable)</option>
               </select>
-            )}
-
-            {newRole === "admin_tl" && (
-              <div className="text-xs text-gray-500 mt-1">
-                Tip: hold Ctrl (Windows) / Cmd (Mac) to select multiple.
-              </div>
             )}
           </div>
 
@@ -372,7 +351,7 @@ export default function AdminManager() {
 
         <div className="text-xs text-gray-500 mt-2">
           Roles: <b>Super</b> (all access), <b>Admin TL</b> (multi-team scoped),{" "}
-          <b>Admin</b> (single-team scoped).
+          <b>Admin</b> (multi-team selectable).
         </div>
       </div>
 
@@ -409,7 +388,6 @@ export default function AdminManager() {
                           onChange={(e) => {
                             const r = e.target.value;
                             setEditRole(r);
-                            setEditTeamType("");
                             setEditTeamTypes([]);
                           }}
                           disabled={isSuperRow(a)}
@@ -427,39 +405,15 @@ export default function AdminManager() {
 
                     <td className="px-3">
                       {isEditing ? (
-                        editRole === "admin_tl" ? (
-                          <select
-                            className="select w-full"
-                            multiple
+                        (editRole === "admin" || editRole === "admin_tl") ? (
+                          <TeamSelect
                             value={editTeamTypes}
-                            onChange={(e) => {
-                              const selected = Array.from(e.target.selectedOptions).map(
-                                (o) => o.value
-                              );
-                              setEditTeamTypes(selected);
-                            }}
+                            onChange={setEditTeamTypes}
                             disabled={isSuperRow(a)}
-                            style={{ minHeight: 40 }}
-                          >
-                            {TEAM_TYPES.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
+                          />
                         ) : (
-                          <select
-                            className="select w-full"
-                            value={editTeamType}
-                            onChange={(e) => setEditTeamType(e.target.value)}
-                            disabled={editRole === "super" || isSuperRow(a)}
-                          >
-                            <option value="">Select...</option>
-                            {TEAM_TYPES.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
+                          <select className="select w-full" disabled>
+                            <option>(Not applicable)</option>
                           </select>
                         )
                       ) : (

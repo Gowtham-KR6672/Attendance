@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
 import FloatingChatButton from "./components/FloatingChatButton";
+import ReportPage from "./pages/ReportPage";
 
 export default function App() {
   const navigate = useNavigate();
@@ -60,11 +61,12 @@ export default function App() {
       const { data } = await api.get("/auth/me");
       setAdmin(data);
 
-      // ✅ store adminId so chat can use it
-      if (data?.id) localStorage.setItem("adminId", data.id);
-      if (data?._id) localStorage.setItem("adminId", data._id);
+      // ✅ keep localStorage up to date
+      const id = data?.id || data?._id;
+      if (id) localStorage.setItem("adminId", id);
       if (data?.email) localStorage.setItem("email", data.email);
       if (data?.role) localStorage.setItem("role", data.role);
+      if (data?.scope) localStorage.setItem("scope", JSON.stringify(data.scope));
     } catch {
       setAdmin(null);
     } finally {
@@ -110,6 +112,16 @@ export default function App() {
           }
         />
 
+        {/* ✅ NEW: Report Page */}
+        <Route
+          path="/report"
+          element={
+            <ProtectedRoute isAuthed={!!admin}>
+              <ReportPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* keep /chat route if you still want it */}
         <Route
           path="/chat"
@@ -136,7 +148,13 @@ export default function App() {
           {chatOpen && (
             <div
               className="fixed bottom-24 left-6 bg-white border rounded-xl shadow-xl"
-              style={{ width: "20vw", height: "30vh", zIndex: 9999, minWidth: 320, minHeight: 320 }}
+              style={{
+                width: "20vw",
+                height: "30vh",
+                zIndex: 9999,
+                minWidth: 320,
+                minHeight: 320,
+              }}
             >
               <Chat open={chatOpen} setOpen={setChatOpen} setUnreadOutside={setUnread} />
             </div>

@@ -1,3 +1,10 @@
+// ✅ AttendanceTable.jsx (FULL UPDATED CODE)
+// Key changes:
+// 1) Team dropdown options must come from SCOPE for admin/admin_tl (not from employees list)
+// 2) Team filter should NOT be locked to scope.teamType (old single-team). It should allow scope.teamTypes values.
+// 3) Default teamFilter should set first team from scope.teamTypes
+// 4) Filtering stays same (employees already scoped by backend)
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 
@@ -99,8 +106,7 @@ const PERMISSION_POINTS = {
   "2 Hr Per MORN": 2,
   "2 Hr Per EVE": 2,
 };
-const isPermission = (s) =>
-  Object.prototype.hasOwnProperty.call(PERMISSION_POINTS, s);
+const isPermission = (s) => Object.prototype.hasOwnProperty.call(PERMISSION_POINTS, s);
 const pointsOf = (s) => PERMISSION_POINTS[s] || 0;
 
 /* =========================
@@ -110,13 +116,10 @@ const COL_W = { sno: 60, emp: 220, id: 140, day: 130 };
 const LEFT = { sno: 0, emp: COL_W.sno, id: COL_W.sno + COL_W.emp };
 
 export default function AttendanceTable() {
-  // ✅ FIXED (removed "=s")
   const [employees, setEmployees] = useState([]);
   const [records, setRecords] = useState([]);
 
-  const [month, setMonth] = useState(() =>
-    new Date().toISOString().slice(0, 7)
-  );
+  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
   const [{ from, to }, setRange] = useState(() =>
     getMonthRange(new Date().toISOString().slice(0, 7))
   );
@@ -133,9 +136,19 @@ export default function AttendanceTable() {
     }
   }, []);
 
+  // ✅ team options must come from scope for admin/admin_tl
+  const scopeTeamOptions = useMemo(() => {
+    const set = new Set();
+    (scope.teamTypes || []).forEach((t) => t && set.add(t));
+    if (scope.teamType) set.add(scope.teamType);
+    return Array.from(set);
+  }, [scope]);
+
   useEffect(() => {
+    // ✅ set defaults from scope
     if (role === "admin" || role === "admin_tl") {
-      if (scope.teamType) setTeamFilter(scope.teamType);
+      const firstTeam = scopeTeamOptions[0] || "";
+      if (firstTeam) setTeamFilter(firstTeam);
       if (scope.shift) setShiftFilter(scope.shift);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,7 +166,7 @@ export default function AttendanceTable() {
 
   useEffect(() => setRange(getMonthRange(month)), [month]);
 
-  // Load employees
+  // Load employees (already scoped by backend)
   useEffect(() => {
     (async () => {
       try {
@@ -188,24 +201,27 @@ export default function AttendanceTable() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to]);
 
-  const teamOptions = useMemo(
-    () => Array.from(new Set(employees.map((e) => e.teamType).filter(Boolean))),
-    [employees]
-  );
-  const shiftOptions = useMemo(
-    () => Array.from(new Set(employees.map((e) => e.shift).filter(Boolean))),
-    [employees]
-  );
+  // ✅ super can use employee-derived options
+  const teamOptions = useMemo(() => {
+    if (role === "admin" || role === "admin_tl") return scopeTeamOptions;
+    return Array.from(new Set(employees.map((e) => e.teamType).filter(Boolean)));
+  }, [employees, role, scopeTeamOptions]);
 
-  const filteredEmployees = useMemo(
-    () =>
-      employees.filter(
-        (e) =>
-          (!teamFilter || e.teamType === teamFilter) &&
-          (!shiftFilter || e.shift === shiftFilter)
-      ),
-    [employees, teamFilter, shiftFilter]
-  );
+  const shiftOptions = useMemo(() => {
+    if (role === "admin" || role === "admin_tl") {
+      // if scoped shift exists, show only that, else derive
+      if (scope.shift) return [scope.shift];
+    }
+    return Array.from(new Set(employees.map((e) => e.shift).filter(Boolean)));
+  }, [employees, role, scope.shift]);
+
+  const filteredEmployees = useMemo(() => {
+    return employees.filter(
+      (e) =>
+        (!teamFilter || e.teamType === teamFilter) &&
+        (!shiftFilter || e.shift === shiftFilter)
+    );
+  }, [employees, teamFilter, shiftFilter]);
 
   const filteredEmployeesSorted = useMemo(() => {
     const arr = [...filteredEmployees];
@@ -213,28 +229,19 @@ export default function AttendanceTable() {
       arr.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       return arr;
     }
-    arr.sort((a, b) =>
-      String(a.code || "").localeCompare(String(b.code || ""))
-    );
+    arr.sort((a, b) => String(a.code || "").localeCompare(String(b.code || "")));
     return arr;
   }, [filteredEmployees]);
 
   const dates = useMemo(() => buildDates(from, to), [from, to]);
 
-  /**
-   * ✅ FIX: timezone-safe map key
-   * - If backend sends "YYYY-MM-DD" use it directly.
-   * - If backend sends ISO datetime, convert to local YMD.
-   */
   const recMap = useMemo(() => {
     const m = new Map();
     for (const r of records) {
       const empId = r.employee?._id || r.employee;
       const raw = r.date;
 
-      const ymd =
-        typeof raw === "string" && raw.length === 10 ? raw : toYMD(new Date(raw));
-
+      const ymd = typeof raw === "string" && raw.length === 10 ? raw : toYMD(new Date(raw));
       m.set(`${empId}|${ymd}`, r);
     }
     return m;
@@ -307,7 +314,7 @@ export default function AttendanceTable() {
     try {
       await api.post("/attendance/mark", {
         employeeId: empId,
-        date, // YYYY-MM-DD
+        date,
         status: status || "",
       });
       await fetchRecords();
@@ -405,7 +412,8 @@ export default function AttendanceTable() {
                 className="select w-full"
                 value={teamFilter}
                 onChange={(e) => setTeamFilter(e.target.value)}
-                disabled={(role === "admin" || role === "admin_tl") && !!scope.teamType}
+                // ✅ allow switching among scoped teams
+                disabled={(role === "admin" || role === "admin_tl") && teamOptions.length <= 1}
               >
                 <option value="">All</option>
                 {teamOptions.map((t) => (
@@ -453,10 +461,7 @@ export default function AttendanceTable() {
           <table className="w-full text-sm min-w-[1100px] table-fixed">
             <thead className="bg-gray-50 sticky top-0 z-[80]">
               <tr className="text-left text-gray-600">
-                <th
-                  className="pb-2 px-3 sticky top-0 left-0 z-[90] bg-gray-50"
-                  style={{ width: COL_W.sno }}
-                >
+                <th className="pb-2 px-3 sticky top-0 left-0 z-[90] bg-gray-50" style={{ width: COL_W.sno }}>
                   #
                 </th>
                 <th

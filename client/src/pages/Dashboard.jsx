@@ -10,14 +10,19 @@ import EmployeeChartsModal from "../components/EmployeeChartsModal";
 
 // ✅ NEW
 import ProcessManager from "../components/ProcessManager";
+import ReportPage from "../pages/ReportPage"; // ✅ ensure path correct: client/src/pages/ReportPage.jsx
 
 export default function Dashboard() {
   const [tab, setTab] = useState("attendance");
   const [showCharts, setShowCharts] = useState(false);
-  const role = localStorage.getItem("role");
+  const role = localStorage.getItem("role") || "";
 
   const TabBtn = ({ id, children }) => (
-    <button className={`btn ${tab === id ? "btn-primary" : ""}`} onClick={() => setTab(id)}>
+    <button
+      className={`btn ${tab === id ? "btn-primary" : ""}`}
+      onClick={() => setTab(id)}
+      type="button"
+    >
       {children}
     </button>
   );
@@ -36,10 +41,18 @@ export default function Dashboard() {
           {/* ✅ NEW TAB */}
           <TabBtn id="process">Process</TabBtn>
 
+          {/* ✅ NEW TAB (between Process and Admins) */}
+          <TabBtn id="report">Report</TabBtn>
+
           {role === "super" && <TabBtn id="admins">Admins</TabBtn>}
         </div>
 
-        <button className="btn btn-outline" onClick={() => setShowCharts(true)} title="View employee chart reports">
+        <button
+          className="btn btn-outline"
+          onClick={() => setShowCharts(true)}
+          title="View employee chart reports"
+          type="button"
+        >
           📊 Charts
         </button>
       </div>
@@ -53,6 +66,9 @@ export default function Dashboard() {
 
       {/* ✅ NEW */}
       {tab === "process" && <ProcessManager />}
+
+      {/* ✅ NEW */}
+      {tab === "report" && <ReportPage />}
 
       {tab === "admins" && role === "super" && <AdminManager />}
 
