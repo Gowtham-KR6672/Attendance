@@ -17,6 +17,7 @@ import employeeRoutes from "./routes/employees.js";
 import attendanceRoutes from "./routes/attendance.js";
 import leaveRemarksRouter from "./routes/leaveRemarks.js";
 import compOffRouter from "./routes/compoff.js";
+import reportRouter from "./routes/report.js";
 
 // ✅ Chat
 import chatRouter from "./routes/chat.js";
@@ -72,6 +73,7 @@ app.use("/api/attendance", attendanceRoutes);
 app.use("/api/leave-remarks", leaveRemarksRouter);
 app.use("/api/compoff", compOffRouter);
 app.use("/api/processes", processRouter);
+app.use("/api/report", reportRouter);
 
 // ✅ Chat REST
 app.use("/api/chat", chatRouter);
