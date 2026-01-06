@@ -484,20 +484,47 @@ export default function ProcessManager() {
   // ==========================
   const chartFields = useMemo(() => selected?.headers || [], [selected]);
 
-  const buildChartData = (xKey, yKey) => {
-    if (!xKey || !yKey) return [];
-    const headers = selected?.headers || [];
+ const buildChartData = (xKey, yKey) => {
+  if (!xKey || !yKey) return [];
+  const headers = selected?.headers || [];
 
-    const yType = headers.find((h) => h.key === yKey)?.type;
-    const yIsFormula = yType === "formula";
+  const yType = headers.find((h) => h.key === yKey)?.type;
+  const yIsFormula = yType === "formula";
 
-    return computedTable.map((row) => {
-      const x = String(row.values?.[xKey] ?? "");
-      const yRaw = yIsFormula ? row.computed?.[yKey] : row.values?.[yKey];
-      const y = Number(yRaw);
-      return { x, y: Number.isFinite(y) ? y : 0 };
-    });
-  };
+  // 1) Build raw points (row-wise)
+  const points = computedTable.map((row) => {
+    const x = String(row.values?.[xKey] ?? "").trim();
+    const yRaw = yIsFormula ? row.computed?.[yKey] : row.values?.[yKey];
+    const y = Number(yRaw);
+    return { x, y: Number.isFinite(y) ? y : 0 };
+  });
+
+  // 2) Aggregate duplicate X values (ex: "August" appears many times)
+  //    This will SUM the Y values for the same X.
+  const agg = new Map();
+  for (const p of points) {
+    if (!p.x) continue;
+    agg.set(p.x, (agg.get(p.x) || 0) + (p.y || 0));
+  }
+  const aggregated = Array.from(agg, ([x, y]) => ({ x, y }));
+
+  // 3) If X looks like month names, sort Jan..Dec
+  const MONTHS = [
+    "january","february","march","april","may","june",
+    "july","august","september","october","november","december",
+  ];
+
+  const monthIndex = (s) => MONTHS.indexOf(String(s || "").trim().toLowerCase());
+  const allAreMonths =
+    aggregated.length > 0 && aggregated.every((p) => monthIndex(p.x) !== -1);
+
+  if (allAreMonths) {
+    aggregated.sort((a, b) => monthIndex(a.x) - monthIndex(b.x));
+  }
+
+  return aggregated;
+};
+
 
   const chartPreviewData = useMemo(() => {
     return buildChartData(chartDraft.xField, chartDraft.yField);
