@@ -1,54 +1,61 @@
-// import axios from "axios";
-
-// export const api = axios.create({
-//   baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000"
-// });
-
-// api.interceptors.request.use((config) => {
-//   const token = localStorage.getItem("token");
-//   if (token) config.headers.Authorization = `Bearer ${token}`;
-//   return config;
-// });
 import axios from "axios";
 
-const BASE =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:4000/api";
+/**
+ * Production:
+ *   VITE_API_BASE_URL = https://attendence-backend-y337.onrender.com
+ *
+ * Final baseURL becomes:
+ *   https://attendence-backend-y337.onrender.com/api
+ *
+ * Local:
+ *   http://localhost:4000/api
+ */
+
+const BASE = import.meta.env.VITE_API_BASE_URL
+  ? `${import.meta.env.VITE_API_BASE_URL}/api`
+  : "http://localhost:4000/api";
 
 export const api = axios.create({
-  baseURL: BASE,           // ✅ includes /api
+  baseURL: BASE,
   withCredentials: true,
 });
 
-// ✅ attach token for every request
+/**
+ * Attach JWT token automatically
+ */
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
-// ✅ logout ONLY on 401/403
+/**
+ * Handle responses globally
+ */
 api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    const status = err?.response?.status;
-    const url = err?.config?.url || "";
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const url = error?.config?.url || "";
 
-    // ✅ DO NOT force logout for has-super endpoint
-    // (this endpoint is frequently called; after logout it will be 401)
+    // Don't auto-logout for has-super check
     if (status === 401 && url.includes("/auth/has-super")) {
-      return Promise.reject(err);
+      return Promise.reject(error);
     }
 
-    // ✅ Normal 401 handling
+    // Normal unauthorized handling
     if (status === 401) {
       localStorage.removeItem("token");
       localStorage.removeItem("role");
       localStorage.removeItem("adminId");
-      window.location.replace("/login");  // replace avoids back-loop
+
+      window.location.replace("/login");
     }
 
-    return Promise.reject(err);
+    return Promise.reject(error);
   }
 );
-
-
