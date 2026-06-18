@@ -38,20 +38,44 @@ app.use(cookieParser());
 // ✅ CORS (Express)  ✅ FIXED (comma missing earlier)
 // =====================================================
 const ALLOWED_ORIGINS = [
-  process.env.CLIENT_URL,               // e.g. https://attendance-lyart-pi.vercel.app
+  process.env.CLIENT_URL, // e.g. https://attendance-lyart-pi.vercel.app
   "http://localhost:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5173",
+  "http://127.0.0.1:5174",
   "https://attendance-lyart-pi.vercel.app",
 ].filter(Boolean);
 
+const isAllowedLocalOrigin = (origin) => {
+  if (!origin) return true;
+
+  try {
+    const url = new URL(origin);
+    const isLocalHost =
+      url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    const isVitePort = /^51\d\d$/.test(url.port);
+    return isLocalHost && isVitePort;
+  } catch {
+    return false;
+  }
+};
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin) || isAllowedLocalOrigin(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+};
+
 app.use(
-  cors({
-    origin: ALLOWED_ORIGINS,
-    credentials: true,
-  })
+  cors(corsOptions)
 );
 
 // If you want to be extra-safe for preflight:
-app.options("*", cors({ origin: ALLOWED_ORIGINS, credentials: true }));
+app.options("*", cors(corsOptions));
 
 // =====================================================
 // ✅ RATE LIMIT (avoid blocking login too quickly)
@@ -141,7 +165,12 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: ALLOWED_ORIGINS,
+    origin(origin, callback) {
+      if (!origin || ALLOWED_ORIGINS.includes(origin) || isAllowedLocalOrigin(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Socket CORS blocked for origin: ${origin}`));
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
