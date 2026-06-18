@@ -16,6 +16,9 @@ const GENDER = ["Male", "Female", "Others"];
 const SHIFTS = ["Day Shift", "Night Shift"];
 const TEAMS = ["On Going", "One Time", "FTE"]; // ✅ add FTE
 const DESIGNATIONS = [
+  "Senior Process Analyst",
+  "Process Analyst",
+  "Trainee Process Analyst",
   "Senior Process Associate",
   "Process Associate",
   "Trainee Process Associate",

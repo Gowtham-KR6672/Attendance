@@ -137,6 +137,9 @@ export default function Team() {
                 <option value="">Designation</option>
                 <option>ATL</option>
                 <option>SME</option>
+                <option>Senior Process Analyst</option>
+                <option>Process Analyst</option>
+                <option>Trainee Process Analyst</option>
                 <option>Senior Process Associate</option>
                 <option>Process Associate</option>
                 <option>Trainee Process Associate</option>

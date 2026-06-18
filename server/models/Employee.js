@@ -23,7 +23,7 @@ const employeeSchema = new mongoose.Schema(
 
     designation: {
       type: String,
-      enum: ['ATL', 'SME', 'Senior Process Associate', 'Process Associate', 'Trainee Process Associate'],
+      enum: ['ATL', 'SME', 'Senior Process Analyst', 'Process Analyst', 'Trainee Process Analyst', 'Senior Process Associate', 'Process Associate', 'Trainee Process Associate'],
       default: null
     },
 
