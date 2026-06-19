@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { api } from "../api";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole, LogIn } from "lucide-react";
 
-export default function Login() {
+export default function Login({ onAuthed }) {
   const [hasSuper, setHasSuper] = useState(true);
   const [view, setView] = useState("login"); // 'login' | 'setup'
 
@@ -74,7 +74,11 @@ export default function Login() {
 
       if (data?.id) localStorage.setItem("adminId", data.id);
 
-      window.location.href = "/";
+      if (onAuthed) {
+        await onAuthed();
+      } else {
+        window.location.assign("/");
+      }
     } catch (err) {
       alert(
         err?.response?.data?.message ||
@@ -84,38 +88,47 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center">
-      <div className="card w-full max-w-md">
+    <div className="login-page min-h-screen flex items-center justify-center px-4 py-8">
+      <div className="login-card w-full max-w-md">
+        <div className="login-icon" aria-hidden="true">
+          <LockKeyhole size={25} strokeWidth={2.25} />
+        </div>
         {!hasSuper && view === "setup" ? (
           <>
-            <h2 className="font-semibold mb-3">Setup Super Admin</h2>
-            <form className="space-y-3" onSubmit={setupSuper}>
+            <div className="login-heading">
+              <h1>Setup Super Admin</h1>
+              <p>Create the primary account for your attendance dashboard.</p>
+            </div>
+            <form className="space-y-4" onSubmit={setupSuper}>
               <div>
-                <div className="label">Email</div>
+                <label className="login-label">Email address</label>
                 <input
-                  className="input w-full"
+                  type="email"
+                  className="login-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
+                  placeholder="admin@example.com"
                 />
               </div>
 
               <div>
-                <div className="label">Password</div>
+                <label className="login-label">Password</label>
 
                 {/* ✅ Password with eye toggle */}
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="input w-full pr-10"
+                    className="login-input pr-12"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="new-password"
+                    placeholder="Create a secure password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded"
+                    className="login-eye"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     title={showPassword ? "Hide password" : "Show password"}
                   >
@@ -124,41 +137,48 @@ export default function Login() {
                 </div>
               </div>
 
-              <button className="btn btn-primary w-full">
-                Create Super Admin
+              <button className="login-submit" type="submit">
+                <span>Create Super Admin</span>
+                <LogIn size={18} strokeWidth={2.25} />
               </button>
             </form>
           </>
         ) : (
           <>
-            <h2 className="font-semibold mb-3">Admin Login</h2>
-            <form className="space-y-3" onSubmit={login}>
+            <div className="login-heading">
+              <h1>Welcome back</h1>
+              <p>Sign in to manage your attendance dashboard securely.</p>
+            </div>
+            <form className="space-y-4" onSubmit={login}>
               <div>
-                <div className="label">Email</div>
+                <label className="login-label">Email address</label>
                 <input
-                  className="input w-full"
+                  type="email"
+                  className="login-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
+                  placeholder="admin@example.com"
                 />
               </div>
 
               <div>
-                <div className="label">Password</div>
+                <label className="login-label">Password</label>
 
                 {/* ✅ Password with eye toggle */}
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
-                    className="input w-full pr-10"
+                    className="login-input pr-12"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     autoComplete="current-password"
+                    placeholder="Enter your password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded"
+                    className="login-eye"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     title={showPassword ? "Hide password" : "Show password"}
                   >
@@ -167,7 +187,10 @@ export default function Login() {
                 </div>
               </div>
 
-              <button className="btn btn-primary w-full">Login</button>
+              <button className="login-submit" type="submit">
+                <span>Sign in</span>
+                <LogIn size={18} strokeWidth={2.25} />
+              </button>
             </form>
           </>
         )}
