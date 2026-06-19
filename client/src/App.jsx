@@ -79,14 +79,7 @@ export default function App() {
   }, [fetchMe]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center">
-        <LoadingScreen 
-          text="Preparing Workspace" 
-          subtext="Establishing a secure connection and organizing your dashboard. Just a moment!" 
-        />
-      </div>
-    );
+    return <div className="min-h-screen bg-[#f8fafc]" />;
   }
 
   return (
