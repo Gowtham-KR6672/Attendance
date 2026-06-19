@@ -3,6 +3,7 @@ import { api } from "../api";
 import { Parser } from "hot-formula-parser";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { PlusCircle, Settings, Download, BarChart2, Edit, Plus, Trash2, List, CheckCircle } from "lucide-react";
 
 import {
   BarChart,
@@ -33,7 +34,7 @@ const DEFAULT_CHART = {
   type: "bar",
   xField: "",
   yField: "",
-  color: "#3b82f6", // ✅ blue default (NOT black/white)
+  color: "#256eed",
   title: "",
   showLegend: true,
 };
@@ -468,13 +469,13 @@ export default function ProcessManager() {
       "";
 
     setChartDraft({
-      ...DEFAULT_CHART,
-      ...(savedChart || {}),
-      xField: x,
-      yField: y,
-      type: (savedChart?.type || "bar").toLowerCase(),
-      color: savedChart?.color || "#3b82f6",
-    });
+        ...DEFAULT_CHART,
+        ...(savedChart || {}),
+        xField: x,
+        yField: y,
+        type: (savedChart?.type || "bar").toLowerCase(),
+        color: "#256eed", // Forced for all processes
+      });
 
     setShowChartModal(true);
   };
@@ -583,21 +584,21 @@ export default function ProcessManager() {
       );
     }
 
-    const color = savedChart.color || "#3b82f6";
+    const color = "#256eed"; // Forced for all processes
     const type = (savedChart.type || "bar").toLowerCase();
 
     return (
       <div className="border rounded-xl p-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="font-semibold">
+        <div className="flex items-center justify-between mb-4">
+          <div className="font-bold text-slate-800">
             {savedChart.title ? savedChart.title : "Chart"}
           </div>
-          <button className="btn btn-outline btn-sm" onClick={openChartModal}>
+          <button className="px-4 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors" onClick={openChartModal}>
             Edit Chart
           </button>
         </div>
 
-        <div style={{ width: "100%", height: 300 }}>
+        <div style={{ width: "100%", height: 320 }}>
           <ResponsiveContainer>
             {type === "line" ? (
               <LineChart data={pageChartData}>
@@ -862,237 +863,256 @@ export default function ProcessManager() {
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full animate-in fade-in duration-300">
         {/* LEFT */}
-        <div className="card col-span-12 lg:col-span-4 space-y-3">
-          <h3 className="font-semibold">Create Process</h3>
+        <div className="col-span-1 lg:col-span-4">
+          <div className="card border border-slate-200 rounded-xl bg-white shadow-sm p-6 h-fit">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <PlusCircle size={24} />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-blue-600">Create Process</h3>
+                <p className="text-sm text-slate-500">Create a new process for data export.</p>
+              </div>
+            </div>
 
-          <div>
-            <div className="label">Process Name</div>
-            <input
-              className="input w-full"
-              value={processName}
-              onChange={(e) => setProcessName(e.target.value)}
-              placeholder="e.g. PDF to Excel Data Entry - Banks"
-            />
-          </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">Process Name</label>
+                <input
+                  className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium"
+                  value={processName}
+                  onChange={(e) => setProcessName(e.target.value)}
+                  placeholder="e.g. PDF to Excel Data Entry - Banks"
+                />
+              </div>
 
-          <button className="btn btn-primary w-fit" onClick={createProcess}>
-            Create
-          </button>
+              <button 
+                className="inline-flex items-center gap-2 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm hover:brightness-110" 
+                style={{ backgroundColor: "#256eed" }}
+                onClick={createProcess}
+              >
+                <Plus size={16} /> Create
+              </button>
+            </div>
 
-          <div className="pt-2">
-            <div className="label">Select Process</div>
-            <select
-              className="select w-full"
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-            >
-              <option value="">Select...</option>
-              {processes.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+            <hr className="border-slate-100 my-8" />
 
-          <div className="flex gap-2 flex-wrap">
-            <button
-              className="btn btn-outline"
-              onClick={openHeaders}
-              disabled={!selectedId}
-            >
-              Edit Headers
-            </button>
-            <button
-              className="btn btn-outline"
-              onClick={startAddRow}
-              disabled={!selectedId}
-            >
-              Add Row
-            </button>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-slate-700 mb-2 block">Select Process</label>
+                <select
+                  className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium"
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                >
+                  <option value="">Select...</option>
+                  {processes.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            {/* ✅ Delete Process */}
-            <button
-  className={`
-    btn btn-outline
-    bg-red-600 !text-white border-red-600
-    hover:bg-red-700 hover:border-red-700
-    hover:scale-[1.03] active:scale-[0.98]
-    transition-all duration-200
-    shadow-sm hover:shadow-md
-    disabled:bg-red-300 disabled:border-red-300 disabled:!text-white/80
-    disabled:hover:scale-100 disabled:shadow-none
-  `}
-  onClick={deleteProcess}
-  disabled={!selectedId}
->
-  Delete Process
-</button>
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  onClick={openHeaders}
+                  disabled={!selectedId}
+                >
+                  <Edit size={16} className="text-blue-600" /> Edit Headers
+                </button>
+                <button
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  onClick={startAddRow}
+                  disabled={!selectedId}
+                >
+                  <PlusCircle size={16} className="text-blue-600" /> Add Row
+                </button>
+                <button
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-100 hover:bg-red-100 text-red-600 rounded-lg text-sm font-medium transition-colors ml-auto disabled:opacity-50"
+                  onClick={deleteProcess}
+                  disabled={!selectedId}
+                >
+                  <Trash2 size={16} /> Delete Process
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* RIGHT */}
-        <div className="card col-span-12 lg:col-span-8 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">Process Setup</h3>
-              {selected && (
-                <div className="text-sm text-gray-600">
-                  Selected: <b>{selected.name}</b>
+        <div className="col-span-1 lg:col-span-8">
+          <div className="card border border-slate-200 rounded-xl bg-white shadow-sm p-6 h-fit">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Settings size={24} />
                 </div>
-              )}
+                <div>
+                  <h3 className="text-lg font-bold text-blue-600">Process Setup</h3>
+                  <p className="text-sm text-slate-500">Configure and download the selected process.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <select
+                  className="px-4 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium min-w-[140px]"
+                  value={downloadMode}
+                  onChange={(e) => setDownloadMode(e.target.value)}
+                  title="Download mode"
+                >
+                  <option value="selected">Selected Process</option>
+                  <option value="all">All Process</option>
+                </select>
+
+                <button className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors whitespace-nowrap" onClick={handleDownload}>
+                  <Download size={16} className="text-slate-500" /> Download Excel
+                </button>
+
+                <button
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                  onClick={openChartModal}
+                  disabled={!selectedId || !selected?.headers?.length}
+                >
+                  <BarChart2 size={16} className="text-emerald-500" /> Chart
+                </button>
+              </div>
             </div>
 
-            <div className="flex gap-2 items-center">
-              {/* ✅ NEW: Selected / All */}
-              <select
-                className="select"
-                value={downloadMode}
-                onChange={(e) => setDownloadMode(e.target.value)}
-                title="Download mode"
-              >
-                <option value="selected">Selected Process</option>
-                <option value="all">All Process</option>
-              </select>
+            {/* ✅ Chart shown on page after Submit */}
+            <ChartOnPage />
 
-              <button className="btn btn-outline" onClick={handleDownload}>
-                ⬇️ Download Excel
-              </button>
+            <div className="mt-6 border border-slate-100 rounded-xl bg-slate-50/50 p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <List size={18} className="text-blue-600" />
+                <h4 className="font-semibold text-slate-800 text-sm">Actions</h4>
+              </div>
 
-              <button
-                className="btn btn-outline"
-                onClick={openChartModal}
-                disabled={!selectedId || !selected?.headers?.length}
-              >
-                📊 Chart
-              </button>
-            </div>
-          </div>
+              {/* Data table */}
+              <div className="overflow-x-auto border border-slate-200 rounded-lg bg-white">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      {(selected?.headers || []).map((h) => (
+                        <th key={h.key} className="px-4 py-3 text-left font-semibold text-slate-700">
+                          {h.label}
+                          {h.type === "formula" && (
+                            <div className="text-[11px] text-slate-400 font-normal mt-0.5">
+                              fx: {h.formula}
+                            </div>
+                          )}
+                        </th>
+                      ))}
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700 w-[160px]">Actions</th>
+                    </tr>
+                  </thead>
 
-          {/* ✅ Chart shown on page after Submit */}
-          <ChartOnPage />
-
-          {/* Data table */}
-          <div className="overflow-x-auto border rounded-xl">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  {(selected?.headers || []).map((h) => (
-                    <th key={h.key} className="px-3 py-2 text-left">
-                      {h.label}
-                      {h.type === "formula" && (
-                        <div className="text-[11px] text-gray-400">
-                          fx: {h.formula}
-                        </div>
-                      )}
-                    </th>
-                  ))}
-                  <th className="px-3 py-2 text-left w-[160px]">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {(selected?.headers || []).length ? (
-                  <tr className="border-t bg-white">
-                    {selected.headers.map((h) => (
-                      <td key={h.key} className="px-3 py-2">
-                        {h.type === "formula" ? (
-                          <div className="text-gray-500 text-sm">Auto</div>
-                        ) : (
-                          <input
-                            className="input w-full"
-                            value={rowDraft[h.key] ?? ""}
-                            onChange={(e) =>
-                              setRowDraft((p) => ({
-                                ...p,
-                                [h.key]: e.target.value,
-                              }))
-                            }
-                          />
-                        )}
-                      </td>
-                    ))}
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
-                        <button
-                          className="btn btn-primary btn-sm"
-                          onClick={saveRow}
-                        >
-                          {editingEntryId ? "Update" : "Save"}
-                        </button>
-                        {editingEntryId && (
-                          <button
-                            className="btn btn-outline btn-sm"
-                            onClick={() => {
-                              setEditingEntryId(null);
-                              setRowDraft({});
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr className="border-t">
-                    <td className="px-3 py-6 text-gray-500">
-                      No headers yet. Click “Edit Headers” to create columns.
-                    </td>
-                  </tr>
-                )}
-
-                {computedTable.map((entry) => (
-                  <tr key={entry._id} className="border-t">
-                    {(selected?.headers || []).map((h) => {
-                      const raw = entry.values?.[h.key] ?? "";
-                      const val =
-                        h.type === "formula"
-                          ? entry.computed?.[h.key] ?? ""
-                          : raw;
-                      return (
-                        <td key={h.key} className="px-3 py-2">
-                          {String(val)}
+                  <tbody className="divide-y divide-slate-100">
+                    {(selected?.headers || []).length ? (
+                      <tr className="bg-blue-50/30">
+                        {selected.headers.map((h) => (
+                          <td key={h.key} className="px-4 py-3">
+                            {h.type === "formula" ? (
+                              <div className="text-slate-400 text-sm italic">Auto-calculated</div>
+                            ) : (
+                              <input
+                                className="w-full px-3 py-1.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-md"
+                                value={rowDraft[h.key] ?? ""}
+                                onChange={(e) =>
+                                  setRowDraft((p) => ({
+                                    ...p,
+                                    [h.key]: e.target.value,
+                                  }))
+                                }
+                              />
+                            )}
+                          </td>
+                        ))}
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+                              onClick={saveRow}
+                            >
+                              {editingEntryId ? "Update" : "Save"}
+                            </button>
+                            {editingEntryId && (
+                              <button
+                                className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
+                                onClick={() => {
+                                  setEditingEntryId(null);
+                                  setRowDraft({});
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
                         </td>
-                      );
-                    })}
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2">
-                        <button
-                          className="btn btn-outline btn-sm"
-                          onClick={() => startEditRow(entry)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="btn btn-danger btn-sm"
-                          onClick={() => deleteRow(entry._id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </tr>
+                    ) : (
+                      <tr>
+                        <td className="px-4 py-8 text-center text-slate-500 italic bg-white" colSpan="100%">
+                          No headers yet. Click "Edit Headers" to create columns.
+                        </td>
+                      </tr>
+                    )}
 
-                {!computedTable.length && selected?.headers?.length ? (
-                  <tr className="border-t">
-                    <td
-                      className="px-3 py-6 text-gray-500"
-                      colSpan={(selected.headers.length || 0) + 1}
-                    >
-                      No data rows yet. Use “Add Row”.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+                    {computedTable.map((entry) => (
+                      <tr key={entry._id} className="hover:bg-slate-50 transition-colors">
+                        {(selected?.headers || []).map((h) => {
+                          const raw = entry.values?.[h.key] ?? "";
+                          const val =
+                            h.type === "formula"
+                              ? entry.computed?.[h.key] ?? ""
+                              : raw;
+                          return (
+                            <td key={h.key} className="px-4 py-3 text-slate-600">
+                              {String(val)}
+                            </td>
+                          );
+                        })}
+                        <td className="px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              className="text-blue-600 hover:text-blue-800 font-medium text-xs transition-colors"
+                              onClick={() => startEditRow(entry)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="text-red-600 hover:text-red-800 font-medium text-xs transition-colors"
+                              onClick={() => deleteRow(entry._id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
 
-          <div className="text-xs text-gray-500">
-            ✅ Excel download exports formula columns as calculated values.
+                    {!computedTable.length && selected?.headers?.length ? (
+                      <tr>
+                        <td
+                          className="px-4 py-8 text-center text-slate-500 italic bg-white"
+                          colSpan={(selected.headers.length || 0) + 1}
+                        >
+                          No data rows yet. Use "Add Row".
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center gap-3 bg-emerald-50/80 border border-emerald-100 rounded-lg p-4 text-sm text-emerald-700">
+              <CheckCircle size={18} className="text-emerald-500 shrink-0" />
+              <p>Excel download exports formulas as calculated values.</p>
+            </div>
           </div>
         </div>
       </div>

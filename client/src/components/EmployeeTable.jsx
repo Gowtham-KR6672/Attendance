@@ -11,6 +11,61 @@ const toYMD = (d) => {
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : "");
 const toDateInput = (v) => (v ? new Date(v).toISOString().slice(0, 10) : "");
 
+import {
+  UserPlus,
+  Mail,
+  User,
+  IdCard,
+  Droplet,
+  Calendar,
+  Briefcase,
+  Clock,
+  Users,
+  Building,
+  Laptop,
+  MapPin,
+  Phone,
+  Save,
+  ChevronDown,
+  ChevronUp,
+  MoveRight,
+  Edit2,
+  Trash2,
+} from 'lucide-react';
+
+const InputField = ({ label, icon: Icon, required, ...props }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-semibold text-gray-600">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+        {Icon && <Icon size={16} strokeWidth={2.5} />}
+      </div>
+      <input className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg" {...props} />
+    </div>
+  </div>
+);
+
+const SelectField = ({ label, icon: Icon, required, children, ...props }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-xs font-semibold text-gray-600">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    <div className="relative">
+      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+        {Icon && <Icon size={16} strokeWidth={2.5} />}
+      </div>
+      <select className="w-full pl-9 pr-8 py-2 bg-white border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none" {...props}>
+        {children}
+      </select>
+      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+    </div>
+  </div>
+);
+
 /** Defaults */
 const GENDER = ["Male", "Female", "Others"];
 const SHIFTS = ["Day Shift", "Night Shift"];
@@ -76,6 +131,7 @@ export default function EmployeeTable() {
 
   const [editingId, setEditingId] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [formExpanded, setFormExpanded] = useState(false); // Collapsed by default
 
   const loadEmployees = async () => {
     const { data } = await api.get("/employees");
@@ -176,6 +232,7 @@ export default function EmployeeTable() {
       }
       await loadEmployees();
       resetForm();
+      setFormExpanded(false);
     } catch (err) {
       openError(err?.response?.data?.message || "Save failed");
     } finally {
@@ -203,6 +260,7 @@ export default function EmployeeTable() {
     setLaptopStatus(e.laptopStatus || "");
     setPresentLocation(e.presentLocation || "");
     setPermanentLocation(e.permanentLocation || "");
+    setFormExpanded(true);
 
     document.getElementById("employee-form")?.scrollIntoView({ behavior: "smooth" });
   };
@@ -416,202 +474,112 @@ export default function EmployeeTable() {
         </div>
       )}
 
-      <div className="grid grid-cols-12 gap-6">
-        {/* LEFT: Add / Update form */}
-        <div className="card col-span-12 lg:col-span-4" id="employee-form">
-          <h3 className="font-semibold mb-4">{editingId ? "Update Employee" : "Add Employee"}</h3>
-
-          <form className="space-y-3" onSubmit={onSubmit}>
-            <div>
-              <div className="label">Logged-in Email</div>
-              <input className="input w-full" value={adminEmail} readOnly />
-            </div>
-
-            <div>
-              <div className="label">Name</div>
-              <input className="input w-full" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-
-            <div>
-              <div className="label">Emp ID</div>
-              <input
-                className="input w-full"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                required
-                disabled={!!editingId}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="label">Gender</div>
-                <select className="select w-full" value={gender} onChange={(e) => setGender(e.target.value)}>
-                  <option value="">Select...</option>
-                  {GENDER.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
+      <div className="space-y-6">
+        {/* TOP: Add / Update form */}
+        <div className="card w-full border border-blue-50 transition-all duration-300" id="employee-form" style={{ borderRadius: '15px', background: 'linear-gradient(145deg, #ffffff 0%, #f9fbff 100%)', boxShadow: '0 8px 30px rgba(0,0,0,0.04)' }}>
+          <div className={`flex items-center justify-between cursor-pointer ${formExpanded ? 'mb-6' : ''}`} onClick={() => setFormExpanded(!formExpanded)}>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600">
+                <UserPlus size={24} />
               </div>
               <div>
-                <div className="label">Blood Group</div>
-                <input
-                  className="input w-full"
-                  placeholder="e.g., O+, A-"
-                  value={bloodGroup}
-                  onChange={(e) => setBloodGroup(e.target.value)}
-                />
+                <h2 className="text-xl font-bold text-blue-600">{editingId ? 'Update Employee' : 'Add Employee'}</h2>
+                <p className="text-sm text-gray-500">Enter employee details to create a new employee profile</p>
               </div>
             </div>
+            <button type="button" className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+              {formExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </button>
+          </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <div className="label">DOB</div>
-                <input type="date" className="input w-full" value={dob} onChange={(e) => setDob(e.target.value)} />
+          {formExpanded && (
+            <form onSubmit={onSubmit} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+              {/* Row 1 */}
+              <div className="md:col-span-2">
+                <InputField label="Logged-in Email" icon={Mail} required placeholder="admin@example.com" name="adminEmail" value={adminEmail} readOnly />
               </div>
-              <div>
-                <div className="label">Cert. DOB</div>
-                <input
-                  type="date"
-                  className="input w-full"
-                  value={certDob}
-                  onChange={(e) => setCertDob(e.target.value)}
-                />
-              </div>
-              <div>
-                <div className="label">Date of Joining</div>
-                <input type="date" className="input w-full" value={doj} onChange={(e) => setDoj(e.target.value)} />
-              </div>
+              <InputField label="Name" icon={User} required placeholder="Enter full name" name="name" value={name} onChange={(e) => setName(e.target.value)} />
+              <InputField label="Emp ID" icon={IdCard} required placeholder="Enter employee ID" name="code" value={code} onChange={(e) => setCode(e.target.value)} disabled={!!editingId} />
+
+              {/* Row 2 */}
+              <SelectField label="Gender" icon={User} name="gender" value={gender} onChange={(e) => setGender(e.target.value)}>
+                <option value="">Select gender</option>
+                {GENDER.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </SelectField>
+              <InputField label="Blood Group" icon={Droplet} placeholder="e.g., O+, A-" name="bloodGroup" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} />
+              <InputField label="DOB" icon={Calendar} required type="date" name="dob" value={dob} onChange={(e) => setDob(e.target.value)} />
+              <InputField label="Cert. DOB" icon={Calendar} type="date" name="certDob" value={certDob} onChange={(e) => setCertDob(e.target.value)} />
+
+              {/* Row 3 */}
+              <InputField label="Date of Joining" icon={Calendar} required type="date" name="doj" value={doj} onChange={(e) => setDoj(e.target.value)} />
+              <SelectField label="Designation" icon={Briefcase} name="designation" value={designation} onChange={(e) => setDesignation(e.target.value)}>
+                <option value="">Select designation</option>
+                {DESIGNATIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </SelectField>
+              <SelectField label="Shift" icon={Clock} name="shift" value={shift} onChange={(e) => setShift(e.target.value)}>
+                <option value="">Select shift</option>
+                {SHIFTS.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </SelectField>
+              <SelectField label="Team" icon={Users} name="teamType" value={teamType} onChange={(e) => setTeamType(e.target.value)}>
+                <option value="">Select team</option>
+                {TEAMS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </SelectField>
+
+              {/* Row 4 */}
+              <InputField label="Department" icon={Building} placeholder="e.g., Production / HR / IT" name="department" value={department} onChange={(e) => setDepartment(e.target.value)} />
+              <InputField label="Personal Email" icon={Mail} placeholder="Enter personal email" name="personalEmail" value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} />
+              <InputField label="Official Email" icon={Mail} placeholder="Enter official email" name="officialEmail" value={officialEmail} onChange={(e) => setOfficialEmail(e.target.value)} />
+              <InputField label="Personal Contact No." icon={Phone} placeholder="Enter contact number" name="personalPhone" value={personalPhone} onChange={(e) => setPersonalPhone(e.target.value)} />
+
+              {/* Row 5 */}
+              <InputField label="Parent Contact No." icon={Phone} placeholder="Enter parent contact number" name="parentPhone" value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} />
+              <SelectField label="Laptop Status" icon={Laptop} name="laptopStatus" value={laptopStatus} onChange={(e) => setLaptopStatus(e.target.value)}>
+                <option value="">Select status</option>
+                {LAPTOP_STATUS.map((x) => (
+                  <option key={x} value={x}>{x}</option>
+                ))}
+              </SelectField>
+              <InputField label="Present Location" icon={MapPin} placeholder="Enter present location" name="presentLocation" value={presentLocation} onChange={(e) => setPresentLocation(e.target.value)} />
+              <InputField label="Permanent Location" icon={MapPin} placeholder="Enter permanent location" name="permanentLocation" value={permanentLocation} onChange={(e) => setPermanentLocation(e.target.value)} />
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
-              <div>
-                <div className="label">Designation</div>
-                <select className="select w-full" value={designation} onChange={(e) => setDesignation(e.target.value)}>
-                  <option value="">Select...</option>
-                  {DESIGNATIONS.map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="label">Shift</div>
-                <select className="select w-full" value={shift} onChange={(e) => setShift(e.target.value)}>
-                  <option value="">Select...</option>
-                  {SHIFTS.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="label">Team</div>
-                <select className="select w-full" value={teamType} onChange={(e) => setTeamType(e.target.value)}>
-                  <option value="">Select...</option>
-                  {TEAMS.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <div className="label">Department</div>
-                <input
-                  className="input w-full"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  placeholder="e.g., Production / HR / IT"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="label">Personal Email</div>
-                <input className="input w-full" value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} />
-              </div>
-              <div>
-                <div className="label">Official Email</div>
-                <input className="input w-full" value={officialEmail} onChange={(e) => setOfficialEmail(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="label">Personal Contact No.</div>
-                <input className="input w-full" value={personalPhone} onChange={(e) => setPersonalPhone(e.target.value)} />
-              </div>
-              <div>
-                <div className="label">Parent Contact No.</div>
-                <input className="input w-full" value={parentPhone} onChange={(e) => setParentPhone(e.target.value)} />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <div className="label">Laptop Status</div>
-                <select className="select w-full" value={laptopStatus} onChange={(e) => setLaptopStatus(e.target.value)}>
-                  <option value="">Select...</option>
-                  {LAPTOP_STATUS.map((x) => (
-                    <option key={x} value={x}>
-                      {x}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <div className="label">Present Location</div>
-                <input
-                  className="input w-full"
-                  value={presentLocation}
-                  onChange={(e) => setPresentLocation(e.target.value)}
-                />
-              </div>
-              <div>
-                <div className="label">Permanent Location</div>
-                <input
-                  className="input w-full"
-                  value={permanentLocation}
-                  onChange={(e) => setPermanentLocation(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button className="btn btn-primary" disabled={busy}>
-                {busy ? "Saving…" : editingId ? "Update" : "Save"}
+            <div className="pt-6">
+              <button type="submit" className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm shadow-blue-200" disabled={busy}>
+                <Save size={18} />
+                {busy ? "Saving…" : editingId ? "Update Employee" : "Save Employee"}
               </button>
               {editingId && (
-                <button type="button" className="btn btn-outline" onClick={resetForm} disabled={busy}>
+                <button type="button" className="ml-4 text-gray-500 hover:text-gray-700 font-medium" onClick={() => { resetForm(); setFormExpanded(false); }} disabled={busy}>
                   Cancel
                 </button>
               )}
             </div>
           </form>
+          )}
         </div>
 
-        {/* RIGHT: Team table + Download */}
-        <div className="card col-span-12 lg:col-span-8">
+        {/* BELOW: Team table + Download */}
+        <div className="card">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">Team</h3>
-            <button className="btn btn-primary" onClick={downloadEmployeesExcel}>
+            <h3 className="text-lg font-bold text-blue-600">Team</h3>
+            <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm" onClick={downloadEmployeesExcel}>
               Download
             </button>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[1600px]">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-gray-600">
+              <thead className="bg-white">
+                <tr className="text-left text-blue-700 font-semibold border-b border-slate-100">
                   {columns.map((col) => (
                     <th key={col.key} className="pb-2 px-3">
                       {col.title}
@@ -638,43 +606,45 @@ export default function EmployeeTable() {
                         {col.render ? col.render(e) : e[col.key] || ""}
                       </td>
                     ))}
-
                     {/* ✅ Transfer column (only TL / Super) */}
                     {canTransfer && (
                       <td className="py-2 px-3">
-                        <div className="flex gap-2">
-                          <select
-                            className="select"
-                            value={transferTo[e._id] || ""}
-                            onChange={(ev) =>
-                              setTransferTo((p) => ({
-                                ...p,
-                                [e._id]: ev.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">Transfer to…</option>
-                            {admins.map((a) => (
-                              <option key={a._id} value={a._id}>
-                                {a.email} ({adminTeamsLabel(a)})
-                              </option>
-                            ))}
-                          </select>
+                        <div className="flex items-center gap-2">
+                          <div className="relative">
+                            <select
+                              className="w-36 pl-2.5 pr-8 py-1.5 bg-white border border-slate-200 hover:border-slate-300 focus:border-blue-500 rounded-md text-xs font-medium text-slate-700 outline-none transition-colors appearance-none"
+                              value={transferTo[e._id] || ""}
+                              onChange={(ev) =>
+                                setTransferTo((p) => ({
+                                  ...p,
+                                  [e._id]: ev.target.value,
+                                }))
+                              }
+                            >
+                              <option value="">Transfer to…</option>
+                              {admins.map((a) => (
+                                <option key={a._id} value={a._id}>
+                                  {a.email} ({adminTeamsLabel(a)})
+                                </option>
+                              ))}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                          </div>
 
-                          <button className="btn btn-outline btn-sm" onClick={() => transferEmployee(e._id)}>
-                            Move
+                          <button className="p-1.5 border border-green-200 text-green-600 hover:bg-green-50 rounded-md transition-colors flex items-center justify-center shrink-0" onClick={() => transferEmployee(e._id)} title="Move Employee">
+                            <MoveRight size={14} strokeWidth={2.5} />
                           </button>
                         </div>
                       </td>
                     )}
 
                     <td className="py-2 px-3">
-                      <div className="flex gap-2">
-                        <button className="btn btn-outline btn-sm" onClick={() => onEdit(e)}>
-                          Edit
+                      <div className="flex items-center gap-2">
+                        <button className="p-1.5 border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-md transition-colors flex items-center justify-center shrink-0" onClick={() => onEdit(e)} title="Edit Employee">
+                          <Edit2 size={14} strokeWidth={2.5} />
                         </button>
-                        <button className="btn btn-danger btn-sm" onClick={() => onDelete(e)}>
-                          Delete
+                        <button className="p-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-md transition-colors flex items-center justify-center shrink-0" onClick={() => onDelete(e)} title="Delete Employee">
+                          <Trash2 size={14} strokeWidth={2.5} />
                         </button>
                       </div>
                     </td>

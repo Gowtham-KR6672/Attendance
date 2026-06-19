@@ -7,7 +7,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Chat from "./pages/Chat";
-import FloatingChatButton from "./components/FloatingChatButton";
 import ReportPage from "./pages/ReportPage";
 
 export default function App() {
@@ -140,11 +139,9 @@ export default function App() {
         <Route path="*" element={<Navigate to={admin ? "/" : "/login"} replace />} />
       </Routes>
 
-      {/* ✅ Floating Chat (popup) */}
+      {/* ✅ Chat Panel (if using App state, though FloatingChatWidget is self-contained) */}
       {!!admin && (
         <>
-          <FloatingChatButton open={chatOpen} setOpen={setChatOpen} unread={unread} />
-
           {chatOpen && (
             <div
               className="fixed bottom-24 left-6 bg-white border rounded-xl shadow-xl"

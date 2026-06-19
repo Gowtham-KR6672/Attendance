@@ -1,17 +1,163 @@
-// client/src/components/FullExport.jsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../api';
+import { FileText, Users, Calendar, Download, Info, ChevronDown, PieChart, ClipboardList, Database, FileSpreadsheet } from 'lucide-react';
 
-const pad = (n) => String(n).padStart(2,'0');
+const LiveExportAnimation = ({ selected, from, to }) => (
+  <div className="mt-6 p-12 border border-slate-100 rounded-xl bg-slate-50/80 overflow-hidden relative flex flex-col items-center justify-center">
+    <style>
+      {`
+        @keyframes flowRight {
+          0% { transform: translateX(0) scale(0.5); opacity: 0; }
+          20% { opacity: 1; transform: translateX(30px) scale(1); }
+          80% { opacity: 1; transform: translateX(110px) scale(1); }
+          100% { transform: translateX(140px) scale(0.5); opacity: 0; }
+        }
+        .data-packet { animation: flowRight 2s infinite linear; }
+        .data-packet:nth-child(1) { animation-delay: 0s; }
+        .data-packet:nth-child(2) { animation-delay: 0.6s; }
+        .data-packet:nth-child(3) { animation-delay: 1.2s; }
+        
+        @keyframes floatUpDown {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+        }
+        .float-anim { animation: floatUpDown 3.5s ease-in-out infinite; }
+        
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 15px rgba(37, 110, 237, 0.2); }
+          50% { box-shadow: 0 0 30px rgba(37, 110, 237, 0.5); }
+        }
+        .glow-anim { animation: pulseGlow 2s ease-in-out infinite; }
+        
+        @keyframes blobFloat {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { animation: blobFloat 8s infinite alternate ease-in-out; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+      `}
+    </style>
+
+    {/* Animated Background Blobs */}
+    <div className="absolute top-0 left-10 w-72 h-72 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+    <div className="absolute top-0 right-10 w-72 h-72 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+    <div className="absolute -bottom-10 left-1/2 w-72 h-72 bg-indigo-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+
+    <div className="relative z-10 flex flex-col items-center w-full">
+      <div className="flex items-center justify-center gap-24 mb-10 w-full max-w-lg relative">
+      
+      {/* Background Track */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -mt-4 w-40 h-0.5 bg-slate-200/50 border-t border-dashed border-slate-300"></div>
+
+      {/* Source Data */}
+      <div className="float-anim flex flex-col items-center z-10 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 glow-anim">
+        <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-3">
+          <Database size={32} strokeWidth={2} />
+        </div>
+        <span className="text-sm font-bold text-slate-700">System Records</span>
+      </div>
+
+      {/* Flowing Data Packets */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -mt-4 w-36 h-10 overflow-hidden flex items-center">
+        <div className="data-packet absolute left-0 w-3 h-3 bg-[#256eed] rounded-full shadow-[0_0_12px_rgba(37,110,237,0.8)]"></div>
+        <div className="data-packet absolute left-0 w-3 h-3 bg-indigo-500 rounded-full shadow-[0_0_12px_rgba(99,102,241,0.8)]"></div>
+        <div className="data-packet absolute left-0 w-3 h-3 bg-[#16a34a] rounded-full shadow-[0_0_12px_rgba(22,163,74,0.8)]"></div>
+      </div>
+
+      {/* Destination File */}
+      <div className="float-anim flex flex-col items-center z-10 bg-white p-5 rounded-2xl shadow-sm border border-slate-200" style={{ animationDelay: '1.75s' }}>
+        <div className="w-16 h-16 bg-green-50 text-[#16a34a] rounded-2xl flex items-center justify-center mb-3">
+          <FileSpreadsheet size={32} strokeWidth={2} />
+        </div>
+        <span className="text-sm font-bold text-slate-700">Compiled Export</span>
+      </div>
+      
+      </div>
+
+      <h3 className="text-lg font-bold text-blue-600 mb-2">Live Data Assembly</h3>
+      <p className="text-sm text-slate-500 text-center max-w-md leading-relaxed">
+        Ready to generate a comprehensive CSV package for <span className="font-semibold text-slate-700">{selected === 'ALL' ? 'All Employees' : 'the selected employee'}</span> spanning <span className="font-semibold text-slate-700">{from}</span> to <span className="font-semibold text-slate-700">{to}</span>.
+      </p>
+    </div>
+  </div>
+);
+
+const ExportIllustration = () => (
+  <svg width="220" height="130" viewBox="0 0 220 130" fill="none" xmlns="http://www.w3.org/2000/svg" className="hidden md:block overflow-visible drop-shadow-md">
+    <style>
+      {`
+        @keyframes slideUp {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-8px); }
+        }
+        .doc-anim { animation: slideUp 4s ease-in-out infinite; }
+        @keyframes pulseDl {
+          0%, 100% { transform: scale(1); filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.3)); }
+          50% { transform: scale(1.05); filter: drop-shadow(0 8px 12px rgba(59, 130, 246, 0.5)); }
+        }
+        .badge-anim { animation: pulseDl 2.5s ease-in-out infinite; transform-origin: 155px 90px; }
+        @keyframes floatLeaves {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-4px) rotate(2deg); }
+        }
+        .leaf-anim { animation: floatLeaves 5s ease-in-out infinite; transform-origin: center; }
+      `}
+    </style>
+
+    {/* Floating clouds/leaves background */}
+    <g className="leaf-anim" opacity="0.7">
+      <path d="M190 70 C180 60, 170 70, 160 60 C160 70, 170 80, 190 80" fill="#bfdbfe" />
+      <path d="M40 90 C30 80, 20 90, 10 80 C10 90, 20 100, 40 100" fill="#dbeafe" />
+      <circle cx="170" cy="40" r="4" fill="#bfdbfe" />
+      <circle cx="185" cy="55" r="2" fill="#93c5fd" />
+      <circle cx="40" cy="60" r="3" fill="#bfdbfe" />
+    </g>
+
+    {/* Folder Back Tab */}
+    <path d="M80 45H110C113 45 115 47 116 50L118 55H170C175.5 55 180 59.5 180 65V100C180 105.5 175.5 110 170 110H70C64.5 110 60 105.5 60 100V55C60 49.5 64.5 45 70 45H80Z" fill="#dbeafe" />
+
+    {/* Animated Document */}
+    <g className="doc-anim">
+      {/* Paper Base */}
+      <rect x="75" y="25" width="85" height="80" rx="4" fill="#ffffff" stroke="#cbd5e1" strokeWidth="2" />
+      {/* Folded Corner */}
+      <path d="M135 25V45H160" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M135 25L160 45" stroke="#cbd5e1" strokeWidth="2" />
+      {/* Document Lines */}
+      <path d="M90 50H130" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
+      <path d="M90 65H145" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
+      <path d="M90 80H120" stroke="#94a3b8" strokeWidth="4" strokeLinecap="round" />
+    </g>
+
+    {/* Folder Front */}
+    <path d="M60 65C60 59.5 64.5 55 70 55H170C175.5 55 180 59.5 180 65V100C180 105.5 175.5 110 170 110H70C64.5 110 60 105.5 60 100V65Z" fill="#93c5fd" />
+    {/* Folder Front Highlight/Gradient Effect */}
+    <path d="M60 65C60 59.5 64.5 55 70 55H170C175.5 55 180 59.5 180 65L160 110H70C64.5 110 60 105.5 60 100V65Z" fill="#60a5fa" opacity="0.3" />
+
+    {/* Download Badge (Animated) */}
+    <g className="badge-anim">
+      <circle cx="155" cy="90" r="22" fill="#2563eb" />
+      {/* Download Arrow */}
+      <path d="M155 78V95M146 86L155 95L164 86" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M144 102H166" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" />
+    </g>
+  </svg>
+);
+
+
+const pad = (n) => String(n).padStart(2, '0');
 const toYMD = (d) => {
   const x = d instanceof Date ? d : new Date(d);
-  return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
+  return `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`;
 };
 const fmtDate = (d) => (d ? new Date(d).toLocaleDateString() : '');
-const fmtDT   = (d) => (d ? new Date(d).toLocaleString() : '');
+const fmtDT = (d) => (d ? new Date(d).toLocaleString() : '');
 const monthRange = (date = new Date()) => {
   const s = new Date(date.getFullYear(), date.getMonth(), 1);
-  const e = new Date(date.getFullYear(), date.getMonth()+1, 0);
+  const e = new Date(date.getFullYear(), date.getMonth() + 1, 0);
   return { from: toYMD(s), to: toYMD(e) };
 };
 
@@ -90,7 +236,7 @@ export default function FullExport() {
   const [employees, setEmployees] = useState([]);
   const [selected, setSelected] = useState('ALL'); // 'ALL' | <empId>
   const [from, setFrom] = useState(monthRange().from);
-  const [to, setTo]     = useState(monthRange().to);
+  const [to, setTo] = useState(monthRange().to);
 
   useEffect(() => {
     (async () => {
@@ -107,8 +253,8 @@ export default function FullExport() {
   const inRange = (d, start, end) => {
     if (!d) return false;
     const x = new Date(d);
-    const s = new Date(start); s.setHours(0,0,0,0);
-    const e = new Date(end);  e.setHours(23,59,59,999);
+    const s = new Date(start); s.setHours(0, 0, 0, 0);
+    const e = new Date(end); e.setHours(23, 59, 59, 999);
     return x >= s && x <= e;
   };
 
@@ -171,14 +317,14 @@ export default function FullExport() {
     }
 
     // count compoff as COMP-OFF (from compoff collection)
-for (const c of compoff) {
-  const empId = String(c.employee?._id || c.employee || '');
-  if (!empId) continue;
-  if (selected !== 'ALL' && empId !== String(selected)) continue;
+    for (const c of compoff) {
+      const empId = String(c.employee?._id || c.employee || '');
+      if (!empId) continue;
+      if (selected !== 'ALL' && empId !== String(selected)) continue;
 
-  if (!countsByEmp.has(empId)) countsByEmp.set(empId, makeBlankCounts());
-  countsByEmp.get(empId)['COMP-OFF'] += 1;
-}
+      if (!countsByEmp.has(empId)) countsByEmp.set(empId, makeBlankCounts());
+      countsByEmp.get(empId)['COMP-OFF'] += 1;
+    }
 
 
     const summaryRows = allEmployees.map(e => {
@@ -196,13 +342,13 @@ for (const c of compoff) {
 
     // ---------------- Sheet 1: Employees ----------------
     const empHeader = [
-      'Employee','Emp ID','Gender','Blood Group',
-      'DOB','Cert DOB','Date of Joining',
-      'Designation','Shift','Team','Department',
-      'Personal Email','Official Email',
-      'Personal Phone','Parent Phone',
-      'Laptop Status','Present Location','Permanent Location',
-      'Created At','Updated At'
+      'Employee', 'Emp ID', 'Gender', 'Blood Group',
+      'DOB', 'Cert DOB', 'Date of Joining',
+      'Designation', 'Shift', 'Team', 'Department',
+      'Personal Email', 'Official Email',
+      'Personal Phone', 'Parent Phone',
+      'Laptop Status', 'Present Location', 'Permanent Location',
+      'Created At', 'Updated At'
     ];
     const empRows = allEmployees.map(e => ([
       e.name || '',
@@ -228,7 +374,7 @@ for (const c of compoff) {
     ]));
 
     // ---------------- Sheet 2: Attendance ----------------
-    const attHeader = ['Date','Employee','Emp ID','Status','Remark','Check-in','Check-out'];
+    const attHeader = ['Date', 'Employee', 'Emp ID', 'Status', 'Remark', 'Check-in', 'Check-out'];
     const attRows = [];
     for (const r of attendance) {
       const e = empIndex.get(String(r.employee?._id || r.employee));
@@ -249,7 +395,7 @@ for (const c of compoff) {
     }
 
     // ---------------- Sheet 3: CompOff ----------------
-    const compHeader = ['Employee','Emp ID','Worked Date','Leave Taken Date','Status','Remark','Created At'];
+    const compHeader = ['Employee', 'Emp ID', 'Worked Date', 'Leave Taken Date', 'Status', 'Remark', 'Created At'];
     const compRows = compoff.map(c => {
       const e = empIndex.get(String(c.employee?._id || c.employee));
       const empName = e?.name ?? c.employee?.name ?? '';
@@ -276,21 +422,21 @@ for (const c of compoff) {
       const ws1 = XLSX.utils.aoa_to_sheet([empHeader, ...empRows]);
       XLSX.utils.book_append_sheet(wb, ws1, 'Employees');
 
-      const ws2 = XLSX.utils.aoa_to_sheet([attHeader, ...(attRows.length ? attRows : [['','','','','','','']])]);
+      const ws2 = XLSX.utils.aoa_to_sheet([attHeader, ...(attRows.length ? attRows : [['', '', '', '', '', '', '']])]);
       XLSX.utils.book_append_sheet(wb, ws2, 'Attendance');
 
-      const ws3 = XLSX.utils.aoa_to_sheet([compHeader, ...(compRows.length ? compRows : [['','','','','','','']])]);
+      const ws3 = XLSX.utils.aoa_to_sheet([compHeader, ...(compRows.length ? compRows : [['', '', '', '', '', '', '']])]);
       XLSX.utils.book_append_sheet(wb, ws3, 'CompOff');
 
-      const tag = `${selected === 'ALL' ? 'ALL' : (employees.find(e=>String(e._id)===String(selected))?.code || 'emp')}_${from}_to_${to}`;
+      const tag = `${selected === 'ALL' ? 'ALL' : (employees.find(e => String(e._id) === String(selected))?.code || 'emp')}_${from}_to_${to}`;
       XLSX.writeFile(wb, `alldetails_${tag}.xlsx`);
     } catch {
       // Fallback: CSVs
-      const esc = (v) => `"${String(v ?? '').replace(/"/g,'""')}"`;
+      const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
       const makeCSV = (header, rows) => [header, ...rows].map(r => r.map(esc).join(',')).join('\n');
 
       const save = (csv, name) => {
-        const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
         a.download = name;
@@ -298,48 +444,119 @@ for (const c of compoff) {
         URL.revokeObjectURL(a.href);
       };
 
-      const tag = `${selected === 'ALL' ? 'ALL' : (employees.find(e=>String(e._id)===String(selected))?.code || 'emp')}_${from}_to_${to}`;
+      const tag = `${selected === 'ALL' ? 'ALL' : (employees.find(e => String(e._id) === String(selected))?.code || 'emp')}_${from}_to_${to}`;
       save(makeCSV(summaryHeader, summaryRows), `Summary_${tag}.csv`);
-      save(makeCSV(empHeader, empRows),      `Employees_${tag}.csv`);
-      save(makeCSV(attHeader, attRows),      `Attendance_${tag}.csv`);
-      save(makeCSV(compHeader, compRows),    `CompOff_${tag}.csv`);
+      save(makeCSV(empHeader, empRows), `Employees_${tag}.csv`);
+      save(makeCSV(attHeader, attRows), `Attendance_${tag}.csv`);
+      save(makeCSV(compHeader, compRows), `CompOff_${tag}.csv`);
     }
   };
 
   return (
-    <div className="card">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-        <div className="md:col-span-2">
-          <div className="label mb-1">Employee</div>
-          <select className="select w-full" value={selected} onChange={e=>setSelected(e.target.value)}>
-            {employeeOptions.map(e => (
-              <option key={e._id} value={e._id}>
-                {e._id === 'ALL' ? 'All Employees' : `${e.name} (${e.code})`}
-              </option>
-            ))}
-          </select>
+    <div className="w-full animate-in fade-in duration-300">
+      <div className="card border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden p-0">
+
+        {/* Header Block */}
+        <div className="p-6 sm:p-8 border-b border-slate-100 flex items-center justify-between gap-6 bg-slate-50/50">
+          <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <FileText size={28} />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-blue-600 mb-1">All Details</h2>
+              <p className="text-slate-500">Export complete attendance data based on selected filters.</p>
+            </div>
+          </div>
+          <ExportIllustration />
         </div>
 
-        <div>
-          <div className="label mb-1">From</div>
-          <input type="date" className="input w-full" value={from} onChange={e=>setFrom(e.target.value)} />
-        </div>
-        <div>
-          <div className="label mb-1">To</div>
-          <input type="date" className="input w-full" value={to} onChange={e=>setTo(e.target.value)} />
-        </div>
+        {/* Form Block */}
+        <div className="p-6 sm:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr_1fr_auto] gap-5 items-end mb-8">
+            {/* Employee Select */}
+            <div>
+              <label className="text-sm font-semibold text-slate-700 mb-2 block">Employee</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-500">
+                  <Users size={18} strokeWidth={2.5} />
+                </div>
+                <select
+                  className="w-full pl-10 pr-10 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium"
+                  value={selected}
+                  onChange={e => setSelected(e.target.value)}
+                >
+                  {employeeOptions.map(e => (
+                    <option key={e._id} value={e._id}>
+                      {e._id === 'ALL' ? 'All Employees' : `${e.name} (${e.code})`}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                  <ChevronDown size={18} />
+                </div>
+              </div>
+            </div>
 
-        <div className="flex md:justify-end">
-          <button className="btn btn-primary" onClick={download}>
-            Download
-          </button>
+            {/* From Date */}
+            <div>
+              <label className="text-sm font-semibold text-slate-700 mb-2 block">From</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Calendar size={18} strokeWidth={2} />
+                </div>
+                <input
+                  type="date"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium"
+                  value={from}
+                  onChange={e => setFrom(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* To Date */}
+            <div>
+              <label className="text-sm font-semibold text-slate-700 mb-2 block">To</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                  <Calendar size={18} strokeWidth={2} />
+                </div>
+                <input
+                  type="date"
+                  className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium"
+                  value={to}
+                  onChange={e => setTo(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Download Button */}
+            <div>
+              <button
+                className="w-full md:w-auto inline-flex items-center justify-center gap-2.5 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors shadow-sm"
+                onClick={download}
+              >
+                <Download size={18} strokeWidth={2.5} />
+                Download
+              </button>
+            </div>
+          </div>
+
+          {/* Info Alert */}
+          <div className="flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-lg p-4 text-sm text-slate-600 mb-8">
+            <div className="text-blue-500 shrink-0">
+              <Info size={20} strokeWidth={2} />
+            </div>
+            <p>
+              <span className="font-semibold text-slate-700">Exports:</span> Summary, Employees, Attendance (with remarks), and Comp-Off for the selected employee (or All) and only within the chosen date range.
+            </p>
+          </div>
+
+          <hr className="border-slate-100 mb-6" />
+          
+          <LiveExportAnimation selected={selected} from={from} to={to} />
+          
         </div>
       </div>
-
-      <p className="text-xs text-gray-500 mt-3">
-        Exports <b>Summary</b>, <b>Employees</b>, <b>Attendance</b> (with remarks), and <b>CompOff</b> for the selected employee (or All)
-        and only within the chosen date range.
-      </p>
     </div>
   );
 }

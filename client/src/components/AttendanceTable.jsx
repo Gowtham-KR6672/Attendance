@@ -394,7 +394,7 @@ export default function AttendanceTable() {
 
       {/* Filters */}
       <div className="grid grid-cols-12 gap-4">
-        <div className="card col-span-12 md:col-span-8">
+        <div className="card col-span-12 md:col-span-5 lg:col-span-5">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <div className="label mb-1">Month</div>
@@ -443,7 +443,7 @@ export default function AttendanceTable() {
           </div>
         </div>
 
-        <div className="card col-span-12 md:col-span-4">
+        <div className="card col-span-12 md:col-span-7 lg:col-span-7">
           <div className="font-semibold mb-2">Legend</div>
           <div className="flex flex-wrap gap-2">
             {STATUS_LIST.map((s) => (
@@ -459,33 +459,39 @@ export default function AttendanceTable() {
       <div className="card">
         <div className="overflow-x-auto overflow-y-auto max-h-[70vh]">
           <table className="w-full text-sm min-w-[1100px] table-fixed">
-            <thead className="bg-gray-50 sticky top-0 z-[80]">
-              <tr className="text-left text-gray-600">
-                <th className="pb-2 px-3 sticky top-0 left-0 z-[90] bg-gray-50" style={{ width: COL_W.sno }}>
+            <thead className="bg-white sticky top-0 z-[80]">
+              <tr className="text-left text-blue-700 font-semibold">
+                <th className="pb-2 px-3 sticky top-0 left-0 z-[90] bg-white border-b border-slate-100" style={{ width: COL_W.sno }}>
                   #
                 </th>
                 <th
-                  className="pb-2 px-3 sticky top-0 z-[90] bg-gray-50"
+                  className="pb-2 px-3 sticky top-0 z-[90] bg-white border-b border-slate-100 align-bottom"
                   style={{ left: LEFT.emp, width: COL_W.emp }}
                 >
-                  Employee
+                  Employee<br/>Name
                 </th>
                 <th
-                  className="pb-2 px-3 sticky top-0 z-[90] bg-gray-50"
+                  className="pb-2 px-3 sticky top-0 z-[90] bg-white border-b border-slate-100 align-bottom"
                   style={{ left: LEFT.id, width: COL_W.id }}
                 >
-                  Emp ID
+                  Employee<br/>ID
                 </th>
 
-                {dates.map((d) => (
-                  <th
-                    key={d}
-                    className="pb-2 px-3 text-center sticky top-0 z-[80] bg-gray-50"
-                    style={{ width: COL_W.day }}
-                  >
-                    {parseYMD(d).toLocaleDateString()}
-                  </th>
-                ))}
+                {dates.map((d) => {
+                  const dateObj = parseYMD(d);
+                  return (
+                    <th
+                      key={d}
+                      className="pb-2 px-3 text-center sticky top-0 z-[80] bg-white border-b border-slate-100"
+                      style={{ width: COL_W.day }}
+                    >
+                      <div className="flex flex-col items-center">
+                        <span>{dateObj.toLocaleDateString()}</span>
+                        <span className="text-[11px] text-slate-400 font-medium uppercase tracking-wider mt-0.5">{dateObj.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
 

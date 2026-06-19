@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { api } from "../api";
-import { Eye, EyeOff, LockKeyhole, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
+import logoImg from "../asset/icon.png";
 
 export default function Login({ onAuthed }) {
   const [hasSuper, setHasSuper] = useState(true);
@@ -82,7 +83,7 @@ export default function Login({ onAuthed }) {
     } catch (err) {
       alert(
         err?.response?.data?.message ||
-          "Login failed (401). Check email/password or backend mapping."
+        "Login failed (401). Check email/password or backend mapping."
       );
     }
   };
@@ -90,8 +91,8 @@ export default function Login({ onAuthed }) {
   return (
     <div className="login-page min-h-screen flex items-center justify-center px-4 py-8">
       <div className="login-card w-full max-w-md">
-        <div className="login-icon" aria-hidden="true">
-          <LockKeyhole size={25} strokeWidth={2.25} />
+        <div className="login-icon !bg-transparent !bg-none !border-none !shadow-none overflow-visible" aria-hidden="true">
+          <img src={logoImg} alt="Logo" className="w-full h-full object-cover scale-[2.5] mix-blend-multiply" />
         </div>
         {!hasSuper && view === "setup" ? (
           <>

@@ -1,5 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { api } from "../api";
+import {
+  UserPlus,
+  Users,
+  Search,
+  Eye,
+  EyeOff,
+  Edit2,
+  Trash2,
+  Info,
+  Plus,
+  X,
+  ChevronDown
+} from "lucide-react";
 
 const TEAM_TYPES = ["On Going", "One Time", "FTE"];
 const SHIFTS = ["Day Shift", "Night Shift"];
@@ -13,6 +26,7 @@ const ROLES = [
 export default function AdminManager() {
   const role = localStorage.getItem("role");
   const [list, setList] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // create form
   const [email, setEmail] = useState("");
@@ -20,7 +34,7 @@ export default function AdminManager() {
   const [showCreatePwd, setShowCreatePwd] = useState(false);
 
   const [newRole, setNewRole] = useState("admin");
-  const [teamTypes, setTeamTypes] = useState([]); // ✅ admin + admin_tl multi
+  const [teamTypes, setTeamTypes] = useState([]); 
   const [shift, setShift] = useState("");
 
   // edit mode
@@ -33,7 +47,7 @@ export default function AdminManager() {
   const [editPassword, setEditPassword] = useState("");
   const [showEditPwd, setShowEditPwd] = useState(false);
 
-  // ✅ dialog box states
+  // dialog box states
   const [successOpen, setSuccessOpen] = useState(false);
   const [successText, setSuccessText] = useState("Success");
   const [errorOpen, setErrorOpen] = useState(false);
@@ -59,7 +73,7 @@ export default function AdminManager() {
   }, []);
 
   if (role !== "super") {
-    return <div className="card">You do not have access to this page.</div>;
+    return <div className="card border border-slate-200 shadow-sm p-6 rounded-xl bg-white">You do not have access to this page.</div>;
   }
 
   const resetCreate = () => {
@@ -74,7 +88,6 @@ export default function AdminManager() {
   const createAdmin = async (e) => {
     e.preventDefault();
 
-    // ✅ Validation using dialog box (no alert)
     if (!email || !password) return openError("Email & Password required");
 
     if ((newRole === "admin" || newRole === "admin_tl") && (!teamTypes || teamTypes.length === 0)) {
@@ -86,11 +99,7 @@ export default function AdminManager() {
         email,
         password,
         role: newRole,
-
-        // ✅ admin + admin_tl both send allowedTeamTypes
         allowedTeamTypes: newRole === "admin" || newRole === "admin_tl" ? teamTypes : undefined,
-
-        // shift optional (ignored for super)
         allowedShift: newRole === "super" ? undefined : shift || undefined,
       });
 
@@ -113,7 +122,6 @@ export default function AdminManager() {
     setEditingId(a._id);
     setEditRole(a.role || "admin");
 
-    // ✅ for admin/admin_tl: use allowedTeamTypes if present, else fallback to allowedTeamType
     const teams =
       Array.isArray(a.allowedTeamTypes) && a.allowedTeamTypes.length
         ? a.allowedTeamTypes
@@ -121,10 +129,7 @@ export default function AdminManager() {
         ? [a.allowedTeamType]
         : [];
     setEditTeamTypes(teams);
-
     setEditShift(a.allowedShift || "");
-
-    // reset password field each time edit opens
     setEditPassword("");
     setShowEditPwd(false);
   };
@@ -148,13 +153,8 @@ export default function AdminManager() {
     try {
       await api.put(`/admins/${id}`, {
         role: editRole,
-
-        // ✅ admin + admin_tl both use allowedTeamTypes
         allowedTeamTypes: editRole === "admin" || editRole === "admin_tl" ? editTeamTypes : undefined,
-
         allowedShift: editRole === "super" ? undefined : editShift || undefined,
-
-        // ✅ only send if typed
         newPassword: editPassword.trim() ? editPassword : undefined,
       });
 
@@ -184,51 +184,99 @@ export default function AdminManager() {
   const renderTeamsText = (a) => {
     const arr = Array.isArray(a.allowedTeamTypes) ? a.allowedTeamTypes : [];
     if (arr.length) return arr.join(", ");
-    return a.allowedTeamType || "";
+    return a.allowedTeamType || "—";
   };
 
-  const TeamSelect = ({ value, onChange, disabled }) => (
-    <select
-      className="select w-full"
-      multiple
-      value={value}
-      onChange={(e) => {
-        const selected = Array.from(e.target.selectedOptions).map((o) => o.value);
-        onChange(selected);
-      }}
-      disabled={disabled}
-      style={{ minHeight: 40 }}
-    >
-      {TEAM_TYPES.map((t) => (
-        <option key={t} value={t}>
-          {t}
-        </option>
-      ))}
-    </select>
-  );
+  const filteredList = list.filter((a) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    const teamText = Array.isArray(a.allowedTeamTypes) ? a.allowedTeamTypes.join(" ") : (a.allowedTeamType || "");
+    return (a.email || "").toLowerCase().includes(q) || teamText.toLowerCase().includes(q);
+  });
+
+  // Custom multi-select component for Teams
+  const TeamSelect = ({ value, onChange, disabled }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (ref.current && !ref.current.contains(event.target)) {
+          setOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const toggleOption = (t) => {
+      if (disabled) return;
+      if (value.includes(t)) {
+        onChange(value.filter((v) => v !== t));
+      } else {
+        onChange([...value, t]);
+      }
+    };
+
+    return (
+      <div className="relative w-full" ref={ref}>
+        <div 
+          className={`w-full min-h-[42px] px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm transition-colors flex flex-wrap items-center gap-1.5 ${disabled ? "bg-slate-50 cursor-not-allowed opacity-70" : "cursor-pointer hover:border-blue-300 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"}`}
+          onClick={() => !disabled && setOpen(!open)}
+        >
+          {value.length === 0 ? (
+            <span className="text-slate-400">Select...</span>
+          ) : (
+            value.map(t => (
+              <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-xs font-semibold">
+                {t}
+                <button 
+                  type="button"
+                  className="hover:text-red-500 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); toggleOption(t); }}
+                >
+                  <X size={12} />
+                </button>
+              </span>
+            ))
+          )}
+          <ChevronDown size={14} className="ml-auto text-slate-400 shrink-0" />
+        </div>
+
+        {open && !disabled && (
+          <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            {TEAM_TYPES.map(t => (
+              <div 
+                key={t}
+                className={`px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 ${value.includes(t) ? "bg-blue-50/50 text-blue-700 font-medium" : "text-slate-700"}`}
+                onClick={(e) => { e.stopPropagation(); toggleOption(t); }}
+              >
+                {t}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-4">
-      {/* ✅ SUCCESS MODAL */}
+    <div className="w-full space-y-6">
+      
+      {/* SUCCESS MODAL */}
       {successOpen && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setSuccessOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl bg-white shadow-xl border border-green-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center">✅</div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 animate-in fade-in duration-200" onClick={() => setSuccessOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl border border-green-200 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">✅</div>
                 <div>
-                  <div className="font-semibold text-green-800">Success</div>
-                  <div className="text-sm text-gray-700">{successText}</div>
+                  <div className="font-bold text-slate-800 text-lg">Success</div>
+                  <div className="text-sm text-slate-600 mt-0.5">{successText}</div>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
-                <button className="btn btn-primary" onClick={() => setSuccessOpen(false)}>
+              <div className="mt-5 flex justify-end">
+                <button className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors" onClick={() => setSuccessOpen(false)}>
                   OK
                 </button>
               </div>
@@ -237,26 +285,20 @@ export default function AdminManager() {
         </div>
       )}
 
-      {/* ✅ ERROR MODAL */}
+      {/* ERROR MODAL */}
       {errorOpen && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4"
-          onClick={() => setErrorOpen(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-xl bg-white shadow-xl border border-red-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4">
-              <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">❌</div>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4 animate-in fade-in duration-200" onClick={() => setErrorOpen(false)}>
+          <div className="w-full max-w-md rounded-xl bg-white shadow-xl border border-red-200 animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0">❌</div>
                 <div>
-                  <div className="font-semibold text-red-800">Error</div>
-                  <div className="text-sm text-gray-700">{errorText}</div>
+                  <div className="font-bold text-slate-800 text-lg">Error</div>
+                  <div className="text-sm text-slate-600 mt-0.5">{errorText}</div>
                 </div>
               </div>
-              <div className="mt-4 flex justify-end">
-                <button className="btn btn-outline" onClick={() => setErrorOpen(false)}>
+              <div className="mt-5 flex justify-end">
+                <button className="px-5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold text-sm transition-colors" onClick={() => setErrorOpen(false)}>
                   Close
                 </button>
               </div>
@@ -265,125 +307,168 @@ export default function AdminManager() {
         </div>
       )}
 
-      {/* CREATE */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Create Admin</h3>
-
-        <form className="grid grid-cols-1 md:grid-cols-6 gap-3" onSubmit={createAdmin}>
-          <div>
-            <div className="label">Email</div>
-            <input className="input w-full" value={email} onChange={(e) => setEmail(e.target.value)} />
+      {/* SECTION 1: CREATE ADMIN */}
+      <div className="border border-slate-200 rounded-xl shadow-sm bg-white p-6 animate-in fade-in duration-300">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <UserPlus size={24} />
           </div>
+          <div>
+            <h2 className="text-xl font-bold text-blue-600">Create Admin</h2>
+            <p className="text-sm text-slate-500">Create a new admin and assign access.</p>
+          </div>
+        </div>
 
-          <div className="md:col-span-2">
-            <div className="label">Password</div>
-            <div className="flex gap-2">
-              <input
-                type={showCreatePwd ? "text" : "password"}
-                className="input w-full"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+        <form className="space-y-6" onSubmit={createAdmin}>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
+            
+            <div className="w-full">
+              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Email <span className="text-red-500">*</span></label>
+              <input 
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium placeholder:text-slate-400 placeholder:font-normal" 
+                placeholder="e.g. admin@example.com"
+                value={email} 
+                onChange={(e) => setEmail(e.target.value)} 
               />
-              <button type="button" className="btn btn-outline" onClick={() => setShowCreatePwd((v) => !v)}>
-                {showCreatePwd ? "Hide" : "Show"}
-              </button>
             </div>
-          </div>
 
-          <div>
-            <div className="label">Role</div>
-            <select
-              className="select w-full"
-              value={newRole}
-              onChange={(e) => {
-                const r = e.target.value;
-                setNewRole(r);
-                setTeamTypes([]);
-              }}
-            >
-              {ROLES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Team */}
-          <div>
-            <div className="label">Team</div>
-
-            {(newRole === "admin" || newRole === "admin_tl") ? (
-              <>
-                <TeamSelect value={teamTypes} onChange={setTeamTypes} disabled={newRole === "super"} />
-                <div className="text-xs text-gray-500 mt-1">
-                  Tip: hold Ctrl (Windows) / Cmd (Mac) to select multiple.
+            <div className="w-full">
+              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Password <span className="text-red-500">*</span></label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showCreatePwd ? "text" : "password"}
+                    className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium placeholder:text-slate-400 placeholder:font-normal pr-10"
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button type="button" className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 transition-colors" onClick={() => setShowCreatePwd((v) => !v)}>
+                    {showCreatePwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
-              </>
-            ) : (
-              <select className="select w-full" disabled>
-                <option>(Not applicable)</option>
+                <button type="button" className="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-blue-600 rounded-lg text-xs font-bold transition-colors shrink-0" onClick={() => setShowCreatePwd((v) => !v)}>
+                  {showCreatePwd ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            <div className="w-full">
+              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Role <span className="text-red-500">*</span></label>
+              <select
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium"
+                value={newRole}
+                onChange={(e) => {
+                  setNewRole(e.target.value);
+                  setTeamTypes([]);
+                }}
+              >
+                {ROLES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
-            )}
+            </div>
+
+            <div className="w-full">
+              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Team</label>
+              {(newRole === "admin" || newRole === "admin_tl") ? (
+                <>
+                  <TeamSelect value={teamTypes} onChange={setTeamTypes} disabled={newRole === "super"} />
+                  <div className="text-[10px] text-slate-500 mt-1.5">
+                    Tip: Hold Ctrl (Windows) / Cmd (Mac) to select multiple
+                  </div>
+                </>
+              ) : (
+                <select className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-sm rounded-lg appearance-none text-slate-400 font-medium cursor-not-allowed" disabled>
+                  <option>(Not applicable)</option>
+                </select>
+              )}
+            </div>
+
+            <div className="w-full">
+              <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Shift (Optional)</label>
+              <select
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium"
+                value={shift}
+                onChange={(e) => setShift(e.target.value)}
+                disabled={newRole === "super"}
+              >
+                <option value="">Select shift</option>
+                {SHIFTS.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
           </div>
 
           <div>
-            <div className="label">Shift</div>
-            <select
-              className="select w-full"
-              value={shift}
-              onChange={(e) => setShift(e.target.value)}
-              disabled={newRole === "super"}
-            >
-              <option value="">(Optional)</option>
-              {SHIFTS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="md:col-span-6">
-            <button className="btn btn-primary">Create</button>
+            <button className="inline-flex items-center justify-center gap-2 bg-[#256eed] hover:brightness-110 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm shrink-0">
+              <Plus size={16} /> Create
+            </button>
           </div>
         </form>
 
-        <div className="text-xs text-gray-500 mt-2">
-          Roles: <b>Super</b> (all access), <b>Admin TL</b> (multi-team scoped),{" "}
-          <b>Admin</b> (multi-team selectable).
+        <div className="flex items-center gap-2 text-xs text-slate-500 mt-6 pt-4 border-t border-slate-100">
+          <Info size={14} className="text-blue-600 shrink-0" />
+          <span>Roles: <b>Super</b> (all access), <b>Admin TL</b> (multi-team scoped), <b>Admin</b> (multi-team selectable).</span>
         </div>
       </div>
 
-      {/* LIST */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Admins</h3>
+      {/* SECTION 2: ADMINS LIST */}
+      <div className="border border-slate-200 rounded-xl shadow-sm bg-white p-6 animate-in fade-in duration-300 delay-75">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <Users size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-blue-600">Admins</h2>
+              <p className="text-sm text-slate-500">Manage system admins and their access.</p>
+            </div>
+          </div>
+
+          <div className="relative w-full md:w-72">
+            <input 
+              type="text"
+              placeholder="Search by email or team..." 
+              className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Search size={16} className="absolute left-3 top-3 text-slate-400" />
+          </div>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-gray-600">
-                <th className="pb-2 px-3">Email</th>
-                <th className="pb-2 px-3">Role</th>
-                <th className="pb-2 px-3">Team</th>
-                <th className="pb-2 px-3">Shift</th>
-                <th className="pb-2 px-3">Reset Password</th>
-                <th className="pb-2 px-3">Actions</th>
+            <thead>
+              <tr className="border-b border-slate-200">
+                <th className="py-3 px-4 text-left font-semibold text-slate-800">Email</th>
+                <th className="py-3 px-4 text-left font-semibold text-slate-800">Role</th>
+                <th className="py-3 px-4 text-left font-semibold text-slate-800">Team</th>
+                <th className="py-3 px-4 text-left font-semibold text-slate-800">Shift</th>
+                <th className="py-3 px-4 text-left font-semibold text-slate-800">Reset Password</th>
+                <th className="py-3 px-4 text-left font-semibold text-slate-800">Actions</th>
               </tr>
             </thead>
 
-            <tbody>
-              {list.map((a) => {
+            <tbody className="divide-y divide-slate-100">
+              {filteredList.map((a) => {
                 const isEditing = editingId === a._id;
 
                 return (
-                  <tr key={a._id} className="border-t">
-                    <td className="py-2 px-3">{a.email}</td>
+                  <tr key={a._id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-4 px-4 text-slate-700 font-medium">{a.email}</td>
 
-                    <td className="px-3">
+                    <td className="py-4 px-4">
                       {isEditing ? (
                         <select
-                          className="select w-full"
+                          className="w-full px-2 py-1.5 bg-white border border-slate-200 focus:border-blue-500 outline-none transition-colors text-sm rounded-md text-slate-700"
                           value={editRole}
                           onChange={(e) => {
                             const r = e.target.value;
@@ -394,16 +479,16 @@ export default function AdminManager() {
                         >
                           {ROLES.map((r) => (
                             <option key={r.value} value={r.value}>
-                              {r.label}
+                              {r.value}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        a.role
+                        <span className="text-slate-600 capitalize">{a.role}</span>
                       )}
                     </td>
 
-                    <td className="px-3">
+                    <td className="py-4 px-4 text-slate-600">
                       {isEditing ? (
                         (editRole === "admin" || editRole === "admin_tl") ? (
                           <TeamSelect
@@ -412,19 +497,17 @@ export default function AdminManager() {
                             disabled={isSuperRow(a)}
                           />
                         ) : (
-                          <select className="select w-full" disabled>
-                            <option>(Not applicable)</option>
-                          </select>
+                          <span className="text-slate-400">—</span>
                         )
                       ) : (
                         renderTeamsText(a)
                       )}
                     </td>
 
-                    <td className="px-3">
+                    <td className="py-4 px-4 text-slate-600">
                       {isEditing ? (
                         <select
-                          className="select w-full"
+                          className="w-full px-2 py-1.5 bg-white border border-slate-200 focus:border-blue-500 outline-none transition-colors text-sm rounded-md text-slate-700"
                           value={editShift}
                           onChange={(e) => setEditShift(e.target.value)}
                           disabled={editRole === "super" || isSuperRow(a)}
@@ -437,55 +520,54 @@ export default function AdminManager() {
                           ))}
                         </select>
                       ) : (
-                        a.allowedShift || ""
+                        a.allowedShift || "—"
                       )}
                     </td>
 
-                    {/* Reset Password */}
-                    <td className="px-3">
+                    <td className="py-4 px-4">
                       {isEditing ? (
                         <div className="flex items-center gap-2">
                           <input
                             type={showEditPwd ? "text" : "password"}
-                            className="input w-full"
-                            placeholder="New password (optional)"
+                            className="w-32 px-2 py-1.5 bg-white border border-slate-200 focus:border-blue-500 outline-none transition-colors text-sm rounded-md text-slate-700"
+                            placeholder="New pwd"
                             value={editPassword}
                             onChange={(e) => setEditPassword(e.target.value)}
                             disabled={isSuperRow(a)}
                           />
                           <button
                             type="button"
-                            className="btn btn-outline btn-sm"
+                            className="p-1.5 border border-slate-200 text-slate-500 hover:text-blue-600 rounded-md transition-colors"
                             onClick={() => setShowEditPwd((v) => !v)}
                             disabled={isSuperRow(a)}
                           >
-                            {showEditPwd ? "Hide" : "Show"}
+                            {showEditPwd ? <EyeOff size={14} /> : <Eye size={14} />}
                           </button>
                         </div>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-slate-400">—</span>
                       )}
                     </td>
 
-                    <td className="px-3">
+                    <td className="py-4 px-4">
                       {isEditing ? (
-                        <div className="flex gap-2">
-                          <button className="btn btn-primary btn-sm" onClick={() => saveEdit(a._id, a.role)}>
+                        <div className="flex items-center gap-2">
+                          <button className="px-3 py-1.5 bg-[#256eed] hover:brightness-110 text-white rounded-md font-semibold text-xs transition-colors" onClick={() => saveEdit(a._id, a.role)}>
                             Save
                           </button>
-                          <button className="btn btn-outline btn-sm" onClick={cancelEdit}>
+                          <button className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-md font-semibold text-xs transition-colors" onClick={cancelEdit}>
                             Cancel
                           </button>
                         </div>
                       ) : (
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                           {!isSuperRow(a) && (
                             <>
-                              <button className="btn btn-outline btn-sm" onClick={() => startEdit(a)}>
-                                Edit
+                              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-md font-semibold text-xs transition-colors" onClick={() => startEdit(a)}>
+                                <Edit2 size={12} /> Edit
                               </button>
-                              <button className="btn btn-danger btn-sm" onClick={() => remove(a._id, a.role)}>
-                                Delete
+                              <button className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-red-200 text-red-600 hover:bg-red-50 rounded-md font-semibold text-xs transition-colors" onClick={() => remove(a._id, a.role)}>
+                                <Trash2 size={12} /> Delete
                               </button>
                             </>
                           )}
@@ -496,10 +578,10 @@ export default function AdminManager() {
                 );
               })}
 
-              {!list.length && (
-                <tr className="border-t">
-                  <td className="py-6 px-3 text-gray-500" colSpan={6}>
-                    No admins yet.
+              {!filteredList.length && (
+                <tr>
+                  <td className="py-12 px-4 text-center text-slate-500" colSpan={6}>
+                    {searchQuery ? "No admins match your search." : "No admins found."}
                   </td>
                 </tr>
               )}

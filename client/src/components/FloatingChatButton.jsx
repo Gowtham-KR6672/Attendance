@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { api } from "../api";
-import { LuMessageCircleMore } from "react-icons/lu";
+import { MessageSquare, X, Send, Minimize2, Maximize2 } from "lucide-react";
 import { socket } from "../socket";
 
 export default function FloatingChatWidget() {
@@ -238,31 +238,15 @@ const socket = useMemo(() => {
   };
 
   return (
-    <>
+    <div className="relative flex items-center justify-center">
       {/* Floating button */}
       <button
         onClick={() => setOpen((v) => !v)}
         title="Chat"
-        style={{
-          position: "fixed",
-          left: 20,
-          bottom: 20,
-          width: 56,
-          height: 56,
-          borderRadius: 999,
-          background: "#0544daff",
-          color: "#fff",
-          border: "none",
-          cursor: "pointer",
-          zIndex: 9999,
-          boxShadow: "0 10px 25px rgba(0,0,0,.25)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 22,
-        }}
+        className="flex items-center gap-2 px-4 py-2.5 text-[14px] font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-sm relative"
       >
-        <LuMessageCircleMore />
+        <MessageSquare size={16} className="text-blue-600" />
+        Chat
 
         {/* 🔴 unread dot */}
         {unreadCount > 0 && (
@@ -270,8 +254,8 @@ const socket = useMemo(() => {
             title={`${unreadCount} new`}
             style={{
               position: "absolute",
-              top: 10,
-              right: 10,
+              top: -4,
+              right: -4,
               width: 12,
               height: 12,
               borderRadius: 999,
@@ -286,9 +270,9 @@ const socket = useMemo(() => {
       {open && (
         <div
           style={{
-            position: "fixed",
-            left: 25,
-            bottom: 90,
+            position: "absolute",
+            top: 60,
+            right: 0,
             zIndex: 9999,
             background: "#fff",
             borderRadius: 12,
@@ -480,6 +464,6 @@ const socket = useMemo(() => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -1,27 +1,64 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api } from '../api';
+import { User, Download, CalendarPlus, ClipboardList, Plus, ArrowUpDown, ChevronDown, Calendar, Save, Trash2 } from 'lucide-react';
 
 const pad = (n) => String(n).padStart(2,'0');
 const toYMD = (d) => {
+  if (!d) return '';
   const x = d instanceof Date ? d : new Date(d);
+  if (isNaN(x.getTime())) return '';
   return `${x.getFullYear()}-${pad(x.getMonth()+1)}-${pad(x.getDate())}`;
 };
 
 const STATUS_OPTIONS = [
-  { v:'PENDING',     label:'Pending',         cls:'bg-orange-500 text-white' },
-  { v:'HALF_TAKEN',  label:'0.5 day taken',   cls:'bg-rose-300 text-black'   },
-  { v:'TAKEN',       label:'Leave taken',     cls:'bg-rose-600 text-white'   },
-  { v:'PAID',        label:'Paid',            cls:'bg-green-600 text-white'  },
+  { v:'PENDING',     label:'Pending',         cls:'bg-orange-50 text-orange-600 border-orange-200' },
+  { v:'HALF_TAKEN',  label:'0.5 day taken',   cls:'bg-rose-50 text-rose-600 border-rose-200'   },
+  { v:'TAKEN',       label:'Leave taken',     cls:'bg-red-50 text-red-600 border-red-200'   },
+  { v:'PAID',        label:'Paid',            cls:'bg-emerald-50 text-emerald-600 border-emerald-200'  },
 ];
 
 const statusMeta = Object.fromEntries(STATUS_OPTIONS.map(s=>[s.v, s]));
+
+const EmptyIllustration = () => (
+  <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-3 drop-shadow-sm overflow-visible">
+    <style>
+      {`
+        @keyframes floatBox {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-3px); }
+        }
+        .box-anim {
+          animation: floatBox 3s ease-in-out infinite;
+        }
+        @keyframes popSparkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+        .sparkle-1 { animation: popSparkle 2s ease-in-out infinite; transform-origin: 12px 6px; }
+        .sparkle-2 { animation: popSparkle 2.5s ease-in-out infinite 0.5s; transform-origin: 9px 7px; }
+        .sparkle-3 { animation: popSparkle 2.2s ease-in-out infinite 1s; transform-origin: 15px 7px; }
+      `}
+    </style>
+    <g className="box-anim">
+      {/* Box back flap */}
+      <path d="M4 12L8 9H16L20 12" stroke="#bfdbfe" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"/>
+      {/* Box front base */}
+      <path d="M4 12L4 18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V12" fill="#eff6ff" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M20 12L16 12L14 15L10 15L8 12L4 12" fill="#ffffff" stroke="#93c5fd" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Sparkles */}
+      <path d="M12 2V6" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" className="sparkle-1"/>
+      <path d="M7 4L9.5 7" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" className="sparkle-2"/>
+      <path d="M17 4L14.5 7" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" className="sparkle-3"/>
+    </g>
+  </svg>
+);
 
 export default function CompOffManager() {
   const [employees, setEmployees] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState('');
 
-  const [rows, setRows] = useState([]); // compoff items for selected employee
-  const [allRows, setAllRows] = useState([]); // for export all
+  const [rows, setRows] = useState([]); 
+  const [allRows, setAllRows] = useState([]); 
 
   // new item form
   const [workDate, setWorkDate] = useState('');
@@ -29,23 +66,37 @@ export default function CompOffManager() {
   const [status, setStatus] = useState('PENDING');
   const [remark, setRemark] = useState('');
 
+  const [savingId, setSavingId] = useState(null);
+
   useEffect(() => {
     (async () => {
-      const { data } = await api.get('/employees');
-      setEmployees(data);
-      if (data?.length) setSelectedEmp(data[0]._id);
+      try {
+        const { data } = await api.get('/employees');
+        setEmployees(data);
+        if (data?.length) setSelectedEmp(data[0]._id);
+      } catch (err) {
+        console.error(err);
+      }
     })();
   }, []);
 
   const loadEmployee = async (empId) => {
     if (!empId) return;
-    const { data } = await api.get('/compoff', { params: { employeeId: empId } });
-    setRows(data || []);
+    try {
+      const { data } = await api.get('/compoff', { params: { employeeId: empId } });
+      setRows(data || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const loadAll = async () => {
-    const { data } = await api.get('/compoff'); // ALL employees
-    setAllRows(data || []);
+    try {
+      const { data } = await api.get('/compoff'); 
+      setAllRows(data || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => { loadAll(); }, []);
@@ -53,39 +104,55 @@ export default function CompOffManager() {
 
   const addItem = async () => {
     if (!selectedEmp || !workDate) return alert('Employee and Work Date are required');
-    const payload = {
-      employeeId: selectedEmp,
-      workDate,
-      leaveDate: leaveDate || undefined,
-      status,
-      remark,
-    };
-    const { data } = await api.post('/compoff', payload);
-    // refresh
-    setWorkDate(''); setLeaveDate(''); setStatus('PENDING'); setRemark('');
-    loadEmployee(selectedEmp);
-    loadAll();
+    try {
+      const payload = {
+        employeeId: selectedEmp,
+        workDate,
+        leaveDate: leaveDate || undefined,
+        status,
+        remark,
+      };
+      await api.post('/compoff', payload);
+      setWorkDate(''); setLeaveDate(''); setStatus('PENDING'); setRemark('');
+      loadEmployee(selectedEmp);
+      loadAll();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to add entry');
+    }
   };
 
   const updateItem = async (row) => {
-    await api.post('/compoff', {
-      id: row._id,
-      leaveDate: row.leaveDate ? toYMD(new Date(row.leaveDate)) : null,
-      status: row.status,
-      remark: row.remark ?? '',
-    });
-    loadEmployee(selectedEmp);
-    loadAll();
+    setSavingId(row._id);
+    try {
+      await api.post('/compoff', {
+        id: row._id,
+        leaveDate: row.leaveDate ? toYMD(new Date(row.leaveDate)) : null,
+        status: row.status,
+        remark: row.remark ?? '',
+      });
+      await loadEmployee(selectedEmp);
+      loadAll();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update entry');
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const deleteItem = async (id) => {
-    if (!confirm('Delete this comp-off entry?')) return;
-    await api.delete(`/compoff/${id}`);
-    setRows((r)=>r.filter(x=>x._id!==id));
-    loadAll();
+    if (!window.confirm('Delete this comp-off entry?')) return;
+    try {
+      await api.delete(`/compoff/${id}`);
+      setRows((r)=>r.filter(x=>x._id!==id));
+      loadAll();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete entry');
+    }
   };
 
-  // Export ALL employees to Excel
   const downloadAll = async () => {
     await loadAll();
     const rowsExport = (allRows || []).map(r => ([
@@ -101,7 +168,7 @@ export default function CompOffManager() {
     const header = ['Employee','Emp ID','Worked Date','Leave Taken Date','Status','Remark','Created At'];
 
     try {
-      const XLSX = await import('xlsx'); // ensure xlsx installed
+      const XLSX = await import('xlsx'); 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet([header, ...rowsExport]);
       XLSX.utils.book_append_sheet(wb, ws, 'CompOff');
@@ -119,119 +186,217 @@ export default function CompOffManager() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Controls */}
-      <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <div className="label mb-1">Employee</div>
-            <select className="select w-full" value={selectedEmp} onChange={e=>setSelectedEmp(e.target.value)}>
-              {employees.map(e => (
-                <option key={e._id} value={e._id}>{e.name} ({e.code})</option>
-              ))}
-            </select>
+    <div className="w-full space-y-6 animate-in fade-in duration-300">
+      
+      {/* 1. Employee Selection Card */}
+      <div className="card border border-slate-200 rounded-xl bg-white p-5 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <User size={24} />
+            </div>
+            <div className="flex-1 max-w-sm">
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Employee</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-blue-500">
+                  <User size={16} strokeWidth={2.5} />
+                </div>
+                <select 
+                  className="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium"
+                  value={selectedEmp} 
+                  onChange={e=>setSelectedEmp(e.target.value)}
+                >
+                  {employees.map(e => (
+                    <option key={e._id} value={e._id}>{e.name} ({e.code})</option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+            </div>
           </div>
+          <button 
+            className="inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors shadow-sm whitespace-nowrap"
+            onClick={downloadAll}
+          >
+            <Download size={18} />
+            Download All (Excel)
+          </button>
+        </div>
+      </div>
 
-          <div className="md:col-span-2 flex items-end">
-            <button className="btn btn-primary" onClick={downloadAll}>Download All (Excel)</button>
+      {/* 2. Add Comp-Off Card */}
+      <div className="card border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <CalendarPlus size={24} />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-blue-600">Add Comp-Off</h3>
+            <p className="text-sm text-slate-500">Add a new comp-off entry for the selected employee</p>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1.5fr_1.5fr_2.5fr_auto] gap-4 items-end">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Worked Date <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <input 
+                  type="date" 
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium" 
+                  value={workDate} 
+                  onChange={e=>setWorkDate(e.target.value)} 
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Leave Taken Date <span className="font-normal text-slate-400">(optional)</span></label>
+              <div className="relative">
+                <input 
+                  type="date" 
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium" 
+                  value={leaveDate} 
+                  onChange={e=>setLeaveDate(e.target.value)} 
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Status <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <select 
+                  className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium"
+                  value={status} 
+                  onChange={e=>setStatus(e.target.value)}
+                >
+                  {STATUS_OPTIONS.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+                  <ChevronDown size={16} />
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Remark</label>
+              <input 
+                className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 placeholder:text-slate-400" 
+                value={remark} 
+                onChange={e=>setRemark(e.target.value)} 
+                placeholder="e.g., Worked on Sunday deployment" 
+              />
+            </div>
+            <div>
+              <button 
+                className="inline-flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors shadow-sm w-full"
+                onClick={addItem}
+              >
+                <Plus size={18} />
+                Add
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Add new */}
-      <div className="card">
-        <h3 className="font-semibold mb-3">Add Comp-Off</h3>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div>
-            <div className="label">Worked Date</div>
-            <input type="date" className="input w-full" value={workDate} onChange={e=>setWorkDate(e.target.value)} />
+      {/* 3. Comp-Off Details Card */}
+      <div className="card border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+            <ClipboardList size={24} />
           </div>
           <div>
-            <div className="label">Leave Taken Date (optional)</div>
-            <input type="date" className="input w-full" value={leaveDate} onChange={e=>setLeaveDate(e.target.value)} />
-          </div>
-          <div>
-            <div className="label">Status</div>
-            <select className="select w-full" value={status} onChange={e=>setStatus(e.target.value)}>
-              {STATUS_OPTIONS.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
-            </select>
-          </div>
-          <div className="md:col-span-2">
-            <div className="label">Remark</div>
-            <input className="input w-full" value={remark} onChange={e=>setRemark(e.target.value)} placeholder="e.g., Worked on Sunday deployment" />
+            <h3 className="text-lg font-bold text-blue-600">Comp-Off Details</h3>
+            <p className="text-sm text-slate-500">List of comp-off entries for the selected employee</p>
           </div>
         </div>
-        <div className="mt-3">
-          <button className="btn btn-outline" onClick={addItem}>Add</button>
-        </div>
-      </div>
-
-      {/* List */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Comp-Off Details</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
-            <thead className="bg-gray-50">
-              <tr className="text-left text-gray-600">
-                <th className="pb-2 px-3">Worked Date</th>
-                <th className="pb-2 px-3">Leave Taken Date</th>
-                <th className="pb-2 px-3">Status</th>
-                <th className="pb-2 px-3">Remark</th>
-                <th className="pb-2 px-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr className="border-t">
-                  <td className="py-6 px-3 text-gray-500" colSpan={5}>No comp-off entries.</td>
+        <div className="p-6">
+          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                <tr>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">Worked Date <ArrowUpDown size={12} className="text-slate-400"/></div>
+                  </th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">Leave Taken Date <ArrowUpDown size={12} className="text-slate-400"/></div>
+                  </th>
+                  <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">Status <ArrowUpDown size={12} className="text-slate-400"/></div>
+                  </th>
+                  <th className="py-3 px-4 font-semibold">Remark</th>
+                  <th className="py-3 px-4 font-semibold text-right">Actions</th>
                 </tr>
-              ) : rows.map((r) => (
-                <tr key={r._id} className="border-t">
-                  <td className="py-2 px-3">{toYMD(new Date(r.workDate))}</td>
-                  <td className="px-3">
-                    <input
-                      type="date"
-                      className="input w-full"
-                      value={r.leaveDate ? toYMD(new Date(r.leaveDate)) : ''}
-                      onChange={(e)=>setRows(rows.map(x=>x._id===r._id ? {...x, leaveDate: e.target.value || null } : x))}
-                    />
-                  </td>
-                  <td className="px-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded text-xs ${statusMeta[r.status]?.cls || 'bg-gray-300'}`}>
-                        {statusMeta[r.status]?.label || r.status}
-                      </span>
-                      <select
-                        className="select"
-                        value={r.status}
-                        onChange={(e)=>setRows(rows.map(x=>x._id===r._id ? {...x, status: e.target.value } : x))}
-                      >
-                        {STATUS_OPTIONS.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
-                      </select>
-                    </div>
-                  </td>
-                  <td className="px-3">
-                    <input
-                      className="input w-full"
-                      value={r.remark || ''}
-                      onChange={(e)=>setRows(rows.map(x=>x._id===r._id ? {...x, remark: e.target.value } : x))}
-                      placeholder="Remark"
-                    />
-                  </td>
-                  <td className="px-3">
-                    <div className="flex gap-2">
-                      <button className="btn btn-outline" onClick={()=>updateItem(r)}>Save</button>
-                      <button className="btn" onClick={()=>deleteItem(r._id)}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-16 text-center text-slate-500">
+                      <EmptyIllustration />
+                      <p className="font-medium text-slate-600">No comp-off entries found.</p>
+                    </td>
+                  </tr>
+                ) : rows.map((r) => (
+                  <tr key={r._id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-700 font-medium">
+                      {toYMD(r.workDate)}
+                    </td>
+                    <td className="py-3 px-4">
+                      <input
+                        type="date"
+                        className="px-3 py-1.5 bg-white border border-slate-200 focus:border-blue-500 outline-none transition-colors text-sm rounded-md text-slate-700 w-full"
+                        value={r.leaveDate ? toYMD(r.leaveDate) : ''}
+                        onChange={(e)=>setRows(rows.map(x=>x._id===r._id ? {...x, leaveDate: e.target.value || null } : x))}
+                      />
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="relative">
+                        <select
+                          className={`w-full pl-3 pr-8 py-1.5 border focus:border-blue-500 outline-none transition-colors text-sm font-medium rounded-md appearance-none ${statusMeta[r.status]?.cls || 'bg-slate-50 text-slate-600 border-slate-200'}`}
+                          value={r.status}
+                          onChange={(e)=>setRows(rows.map(x=>x._id===r._id ? {...x, status: e.target.value } : x))}
+                        >
+                          {STATUS_OPTIONS.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                          <ChevronDown size={14} className={statusMeta[r.status]?.cls ? 'opacity-70' : 'text-slate-400'} />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <input
+                        className="w-full px-3 py-1.5 bg-white border border-slate-200 focus:border-blue-500 outline-none transition-colors text-sm rounded-md text-slate-700 placeholder:text-slate-400"
+                        value={r.remark || ''}
+                        onChange={(e)=>setRows(rows.map(x=>x._id===r._id ? {...x, remark: e.target.value } : x))}
+                        placeholder="Add a remark"
+                      />
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors" 
+                          onClick={()=>updateItem(r)}
+                          title="Save Changes"
+                          disabled={savingId === r._id}
+                        >
+                          <Save size={16} />
+                        </button>
+                        <button 
+                          className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-md transition-colors" 
+                          onClick={()=>deleteItem(r._id)}
+                          title="Delete Entry"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

@@ -1,262 +1,584 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { api } from '../api';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid
-} from 'recharts';
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
+  BarChart3,
+  BriefcaseBusiness,
+  Building2,
+  CalendarDays,
+  ChevronDown,
+  Clock3,
+  IdCard,
+  Mail,
+  MapPin,
+  Phone,
+  RefreshCw,
+  UserRound,
+  UsersRound,
+} from "lucide-react";
+import { api } from "../api";
+import MaleImage from "../asset/Male.png";
+import FemaleImage from "../asset/female.png";
 
-// Full palette used by chart
 const STATUS_LIST = [
-  'PRESENT', 'CASUAL LEAVE', 'SICK LEAVE', 'SESSION_01 LEAVE', 'SESSION_02 LEAVE',
-  'COMP-OFF', 'PHONE INTIMATION', 'NO INTIMATION', 'L.O.P.',
-  '1 Hr Per MORN', '2 Hr Per MORN', '1 Hr Per EVE', '2 Hr Per EVE'
+  "PRESENT",
+  "CASUAL LEAVE",
+  "SICK LEAVE",
+  "SESSION_01 LEAVE",
+  "SESSION_02 LEAVE",
+  "COMP-OFF",
+  "PHONE INTIMATION",
+  "NO INTIMATION",
+  "L.O.P.",
+  "1 Hr Per MORN",
+  "2 Hr Per MORN",
+  "1 Hr Per EVE",
+  "2 Hr Per EVE",
 ];
 
-// Day-based leave types to show in the first table
 const DAY_LEAVE = [
-  'CASUAL LEAVE','SICK LEAVE','SESSION_01 LEAVE','SESSION_02 LEAVE',
-  'COMP-OFF','PHONE INTIMATION','NO INTIMATION','L.O.P.'
+  "CASUAL LEAVE",
+  "SICK LEAVE",
+  "SESSION_01 LEAVE",
+  "SESSION_02 LEAVE",
+  "COMP-OFF",
+  "PHONE INTIMATION",
+  "NO INTIMATION",
+  "L.O.P.",
 ];
 
-// Hour-based leave types to show in the second table
 const HOUR_LEAVE = [
-  '1 Hr Per MORN','2 Hr Per MORN','1 Hr Per EVE','2 Hr Per EVE'
+  "1 Hr Per MORN",
+  "2 Hr Per MORN",
+  "1 Hr Per EVE",
+  "2 Hr Per EVE",
 ];
 
-// day/hour equivalents
 const DAY_EQ = {
-  'SESSION_01 LEAVE': 0.5,
-  'SESSION_02 LEAVE': 0.5,
-  'CASUAL LEAVE': 1,
-  'SICK LEAVE': 1,
-  'COMP-OFF': 1,
-  'PHONE INTIMATION': 1,
-  'NO INTIMATION': 1,
-  'L.O.P.': 1
-};
-const HOUR_EQ = {
-  '1 Hr Per MORN': 1,
-  '2 Hr Per MORN': 2,
-  '1 Hr Per EVE': 1,
-  '2 Hr Per EVE': 2
+  "SESSION_01 LEAVE": 0.5,
+  "SESSION_02 LEAVE": 0.5,
+  "CASUAL LEAVE": 1,
+  "SICK LEAVE": 1,
+  "COMP-OFF": 1,
+  "PHONE INTIMATION": 1,
+  "NO INTIMATION": 1,
+  "L.O.P.": 1,
 };
 
-const pad = (n)=>String(n).padStart(2,'0');
-const toYMD=(d)=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const HOUR_EQ = {
+  "1 Hr Per MORN": 1,
+  "2 Hr Per MORN": 2,
+  "1 Hr Per EVE": 1,
+  "2 Hr Per EVE": 2,
+};
+
+const pad = (value) => String(value).padStart(2, "0");
+const toYMD = (date) =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+const chartLabel = (status) =>
+  status
+    .replace(" LEAVE", " LEAVE")
+    .replace("PHONE INTIMATION", "PHONE INTIMATION")
+    .replace("NO INTIMATION", "NO INTIMATION");
 
 export default function EmployeeInsight() {
   const [employees, setEmployees] = useState([]);
-  const [empId, setEmpId] = useState('');
-  const [emp, setEmp] = useState(null);
-
-  const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd   = new Date(today.getFullYear(), today.getMonth()+1, 0);
-  const [from, setFrom] = useState(toYMD(monthStart));
-  const [to, setTo] = useState(toYMD(monthEnd));
-
+  const [empId, setEmpId] = useState("");
   const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedEmpId, setHighlightedEmpId] = useState(null);
+  const dropdownRef = useRef(null);
+  const searchTermRef = useRef("");
+  const searchTimeoutRef = useRef(null);
 
   useEffect(() => {
-    (async () => {
-      const { data } = await api.get('/employees');
-      setEmployees(data);
-      if (data?.length) setEmpId(data[0]._id);
-    })();
+    const handleKeyDown = (e) => {
+      if (!isOpen) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (e.key.length === 1) {
+        searchTermRef.current += e.key.toLowerCase();
+
+        const match = employees.find(emp =>
+          emp.name.toLowerCase().startsWith(searchTermRef.current) ||
+          emp.code.toLowerCase().startsWith(searchTermRef.current)
+        );
+
+        if (match) {
+          setHighlightedEmpId(match._id);
+          const el = document.getElementById(`emp-option-${match._id}`);
+          if (el) {
+            el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        }
+
+        if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+        searchTimeoutRef.current = setTimeout(() => {
+          searchTermRef.current = "";
+          setHighlightedEmpId(null);
+        }, 800);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [isOpen, employees]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+        setHighlightedEmpId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const today = new Date();
+  const [from, setFrom] = useState(
+    toYMD(new Date(today.getFullYear(), today.getMonth(), 1))
+  );
+  const [to, setTo] = useState(
+    toYMD(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+  );
+
   useEffect(() => {
-    setEmp(employees.find(e => e._id === empId) || null);
-  }, [empId, employees]);
+    let active = true;
+    api.get("/employees").then(({ data }) => {
+      if (!active) return;
+      const list = Array.isArray(data) ? data : [];
+      setEmployees(list);
+      if (list.length) setEmpId(list[0]._id);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const load = async () => {
+  const employee = useMemo(
+    () => employees.find((item) => item._id === empId) || null,
+    [empId, employees]
+  );
+
+  const load = useCallback(async () => {
     if (!empId) return;
-    const { data } = await api.get('/attendance', { params: { employeeId: empId, from, to } });
-    setRecords(data || []);
-  };
-  useEffect(()=>{ if (empId) load(); }, [empId, from, to]);
+    setLoading(true);
+    try {
+      const { data } = await api.get("/attendance", {
+        params: { employeeId: empId, from, to },
+      });
+      setRecords(Array.isArray(data) ? data : []);
+    } finally {
+      setLoading(false);
+    }
+  }, [empId, from, to]);
 
-  /* ---------- chart counts ---------- */
+  useEffect(() => {
+    load();
+  }, [load]);
+
   const counts = useMemo(() => {
-    const c = Object.fromEntries(STATUS_LIST.map(s => [s, 0]));
-    for (const r of records) if (c[r.status] !== undefined) c[r.status]++;
-    return c;
+    const result = Object.fromEntries(STATUS_LIST.map((status) => [status, 0]));
+    records.forEach((record) => {
+      if (result[record.status] !== undefined) result[record.status] += 1;
+    });
+    return result;
   }, [records]);
 
   const chartData = useMemo(
-    () => STATUS_LIST.map(s => ({ status: s, days: counts[s] || 0 })),
+    () =>
+      STATUS_LIST.map((status) => ({
+        status,
+        label: chartLabel(status),
+        days: counts[status] || 0,
+      })),
     [counts]
   );
 
-  /* ---------- tables / totals ---------- */
-  const dayRows = useMemo(() => {
-    return DAY_LEAVE
-      .map(s => ({ status: s, count: counts[s] || 0, eq: (counts[s] || 0) * (DAY_EQ[s] || 0) }))
-      .filter(r => r.count > 0); // show only occurred
-  }, [counts]);
+  const dayRows = useMemo(
+    () =>
+      DAY_LEAVE.map((status) => ({
+        status,
+        count: counts[status] || 0,
+        equivalent: (counts[status] || 0) * (DAY_EQ[status] || 0),
+      })).filter((row) => row.count > 0),
+    [counts]
+  );
 
-  const hourRows = useMemo(() => {
-    return HOUR_LEAVE
-      .map(s => ({ status: s, count: counts[s] || 0, eq: (counts[s] || 0) * (HOUR_EQ[s] || 0) }))
-      .filter(r => r.count > 0); // show only occurred
-  }, [counts]);
+  const hourRows = useMemo(
+    () =>
+      HOUR_LEAVE.map((status) => ({
+        status,
+        count: counts[status] || 0,
+        equivalent: (counts[status] || 0) * (HOUR_EQ[status] || 0),
+      })).filter((row) => row.count > 0),
+    [counts]
+  );
 
-  const totalDayEq = useMemo(
-    () => dayRows.reduce((sum, r) => sum + r.eq, 0),
+  const totalDayCount = useMemo(
+    () => dayRows.reduce((sum, row) => sum + row.count, 0),
     [dayRows]
   );
-  const totalHourEq = useMemo(
-    () => hourRows.reduce((sum, r) => sum + r.eq, 0),
+  const totalDayEquivalent = useMemo(
+    () => dayRows.reduce((sum, row) => sum + row.equivalent, 0),
+    [dayRows]
+  );
+  const totalHours = useMemo(
+    () => hourRows.reduce((sum, row) => sum + row.equivalent, 0),
     [hourRows]
   );
 
+  const details = employee
+    ? [
+      [UserRound, "Name", employee.name],
+      [IdCard, "Emp ID", employee.code],
+      [BriefcaseBusiness, "Designation", employee.designation || "-"],
+      [UsersRound, "Team", employee.teamType || "-"],
+      [Clock3, "Shift", employee.shift || "-"],
+      [Mail, "Personal Email", employee.personalEmail || "-"],
+      [Phone, "Phone", employee.personalPhone || "-"],
+      [Building2, "Department", employee.department || "-"],
+      [MapPin, "Present Location", employee.presentLocation || "-"],
+    ]
+    : [];
+
   return (
-    <div className="grid grid-cols-12 gap-6">
-      {/* Left: Employee card */}
-      <div className="card col-span-12 lg:col-span-4">
-        <h3 className="font-semibold mb-4">Employee</h3>
+    <section className="insight-page">
+      <div className="insight-layout">
+        <div className="insight-sidebar">
+          <aside className="insight-id-card" style={{ position: "relative" }} ref={dropdownRef}>
+            <div className="insight-id-header" style={{ position: "relative" }}>
+              <div
+                className="insight-id-select"
+                onClick={() => setIsOpen(!isOpen)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <span>Employee Data</span>
+                <ChevronDown
+                  color="white"
+                  size={20}
+                  style={{
+                    transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.2s ease",
+                  }}
+                />
+              </div>
+            </div>
 
-        <div className="space-y-3">
-          <div>
-            <div className="label mb-1">Select Employee</div>
-            <select className="select w-full" value={empId} onChange={e=>setEmpId(e.target.value)}>
-              {employees.map(e => (
-                <option key={e._id} value={e._id}>{e.name} ({e.code})</option>
-              ))}
-            </select>
+            {isOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "62px",
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  overflowY: "auto",
+                  backgroundColor: "#fff",
+                  zIndex: 50,
+                  borderTop: "1px solid #e2e8f0",
+                }}
+              >
+                {employees.map((item) => (
+                  <div
+                    key={item._id}
+                    id={`emp-option-${item._id}`}
+                    onClick={() => {
+                      setEmpId(item._id);
+                      setIsOpen(false);
+                      setHighlightedEmpId(null);
+                    }}
+                    style={{
+                      padding: "10px 14px",
+                      cursor: "pointer",
+                      color: highlightedEmpId === item._id ? "#2563eb" : "#1c3157",
+                      fontSize: "13px",
+                      fontWeight: empId === item._id || highlightedEmpId === item._id ? 700 : 500,
+                      backgroundColor: empId === item._id ? "#f0f5ff" : "transparent",
+                      borderBottom: "1px solid #f1f5f9",
+                      transition: "background-color 0.15s ease, color 0.15s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (empId !== item._id) e.currentTarget.style.backgroundColor = "#f8fafc";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (empId !== item._id) e.currentTarget.style.backgroundColor = "transparent";
+                    }}
+                  >
+                    {item.name} ({item.code})
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="insight-id-body">
+              <div className="insight-id-identity">
+                <span className="insight-id-avatar">
+                  {employee?.gender?.toLowerCase() === "female" ? (
+                    <img src={FemaleImage} alt="Female Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                  ) : (
+                    <img src={MaleImage} alt="Male Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                  )}
+                </span>
+                <h2>{employee?.name || "Employee"}</h2>
+                <strong>{employee?.code || "-"}</strong>
+                <p>{employee?.designation || "-"}</p>
+              </div>
+
+              <dl className="insight-id-details">
+                {details.map(([Icon, label, value]) => (
+                  <div key={label}>
+                    <Icon size={18} strokeWidth={1.9} />
+                    <dt>{label}</dt>
+                    <span>:</span>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+
+            <div className="insight-id-footer">
+              <div className="insight-id-dates">
+                <label>
+                  <CalendarDays size={19} />
+                  <span>
+                    From
+                    <input
+                      type="date"
+                      value={from}
+                      onChange={(event) => setFrom(event.target.value)}
+                    />
+                  </span>
+                </label>
+                <label>
+                  <CalendarDays size={19} />
+                  <span>
+                    To
+                    <input
+                      type="date"
+                      value={to}
+                      onChange={(event) => setTo(event.target.value)}
+                    />
+                  </span>
+                </label>
+              </div>
+
+              <button className="insight-id-reload" type="button" onClick={load}>
+                <RefreshCw size={19} className={loading ? "animate-spin" : ""} />
+                {loading ? "Loading..." : "Reload"}
+              </button>
+            </div>
+          </aside>
+        </div>
+
+        <div className="insight-main">
+          <article className="insight-card insight-chart-card">
+            <div className="insight-chart-heading">
+              <h3>
+                Attendance (Counts) — {from} to {to}
+              </h3>
+              <span className="insight-chart-icon">
+                <BarChart3 size={18} />
+              </span>
+            </div>
+
+            <div className="insight-chart">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 18, right: 10, left: -10, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="insightBar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3678ff" />
+                      <stop offset="100%" stopColor="#164ad8" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#dce7f8" strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="label"
+                    interval={0}
+                    angle={-32}
+                    height={64}
+                    textAnchor="end"
+                    tick={{ fill: "#52698e", fontSize: 9 }}
+                    axisLine={{ stroke: "#aebfda" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    allowDecimals={false}
+                    tick={{ fill: "#52698e", fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "rgba(45, 108, 246, 0.05)" }}
+                    contentStyle={{
+                      borderRadius: 10,
+                      border: "1px solid #dbe7fa",
+                      boxShadow: "0 8px 24px rgba(37, 99, 235, .12)",
+                    }}
+                  />
+                  <Bar
+                    dataKey="days"
+                    fill="url(#insightBar)"
+                    radius={[3, 3, 0, 0]}
+                    maxBarSize={42}
+                  >
+                    <LabelList
+                      dataKey="days"
+                      position="top"
+                      fill="#1c2d4c"
+                      fontSize={10}
+                    />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="insight-legend">
+              <span />
+              days
+            </div>
+
+            <div className="insight-summary-grid">
+              <div className="insight-summary">
+                <span className="insight-summary-icon">
+                  <CalendarDays size={20} />
+                </span>
+                <div>
+                  <span>Total day-leave (days)</span>
+                  <strong>{totalDayEquivalent.toFixed(1)}</strong>
+                </div>
+              </div>
+              <div className="insight-summary">
+                <span className="insight-summary-icon">
+                  <Clock3 size={20} />
+                </span>
+                <div>
+                  <span>Total hour Permission Taken (hrs)</span>
+                  <strong>{totalHours}</strong>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <div className="insight-tables-grid">
+            <article className="insight-card insight-table-card">
+              <div className="insight-section-title">
+                <CalendarDays size={15} />
+                <h3>Leave (Day-based)</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="insight-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Count</th>
+                      <th>Day equivalent</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dayRows.length ? (
+                      <>
+                        {dayRows.map((row) => (
+                          <tr key={row.status}>
+                            <td>{row.status}</td>
+                            <td>{row.count}</td>
+                            <td>{row.equivalent.toFixed(1)}</td>
+                          </tr>
+                        ))}
+                        <tr className="insight-total-row">
+                          <td>Total</td>
+                          <td>{totalDayCount}</td>
+                          <td>{totalDayEquivalent.toFixed(1)}</td>
+                        </tr>
+                      </>
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="insight-empty text-center align-middle" style={{ height: '220px' }}>
+                          <div className="flex flex-col items-center justify-center h-full gap-3">
+                            <svg className="w-14 h-14 text-blue-300 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-gray-500 font-medium">No day-based leave taken.</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <article className="insight-card insight-table-card">
+              <div className="insight-section-title">
+                <Clock3 size={15} />
+                <h3>Permission Details</h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="insight-table">
+                  <thead>
+                    <tr>
+                      <th>Status</th>
+                      <th>Count</th>
+                      <th>Hours</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {hourRows.length ? (
+                      <>
+                        {hourRows.map((row) => (
+                          <tr key={row.status}>
+                            <td>{row.status}</td>
+                            <td>{row.count}</td>
+                            <td>{row.equivalent}</td>
+                          </tr>
+                        ))}
+                        <tr className="insight-total-row">
+                          <td>Total</td>
+                          <td>{hourRows.reduce((sum, row) => sum + row.count, 0)}</td>
+                          <td>{totalHours}</td>
+                        </tr>
+                      </>
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="insight-empty text-center align-middle" style={{ height: '220px' }}>
+                          <div className="flex flex-col items-center justify-center h-full gap-3">
+                            <svg className="w-14 h-14 text-blue-300 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-gray-500 font-medium">No hour deductions.</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </article>
           </div>
-
-          {emp && (
-            <div className="space-y-1 text-sm">
-              <div><span className="text-gray-500">Name:</span> {emp.name}</div>
-              <div><span className="text-gray-500">Emp ID:</span> {emp.code}</div>
-              <div><span className="text-gray-500">Designation:</span> {emp.designation || '-'}</div>
-              <div><span className="text-gray-500">Team:</span> {emp.teamType || '-'}</div>
-              <div><span className="text-gray-500">Shift:</span> {emp.shift || '-'}</div>
-              <div><span className="text-gray-500">Personal Email:</span> {emp.personalEmail || '-'}</div>
-              <div><span className="text-gray-500">Phone:</span> {emp.personalPhone || '-'}</div>
-              <div><span className="text-gray-500">Department:</span> {emp.department || '-'}</div>
-              <div><span className="text-gray-500">Present Location:</span> {emp.presentLocation || '-'}</div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <div className="label">From</div>
-              <input type="date" className="input w-full" value={from} onChange={e=>setFrom(e.target.value)} />
-            </div>
-            <div>
-              <div className="label">To</div>
-              <input type="date" className="input w-full" value={to} onChange={e=>setTo(e.target.value)} />
-            </div>
-          </div>
-
-          <button className="btn btn-outline w-full" onClick={load}>Reload</button>
         </div>
       </div>
-
-      {/* Right: Chart + tables */}
-      <div className="col-span-12 lg:col-span-8 space-y-6">
-        <div className="card">
-          <h3 className="font-semibold mb-4">Attendance (Counts) — {from} to {to}</h3>
-          <div style={{ width: '100%', height: 420 }}>
-            <ResponsiveContainer>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="status" tick={{ fontSize: 11 }} interval={0} angle={-30} textAnchor="end" height={80} />
-                <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="days" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Summary strip */}
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <div className="p-3 rounded border">
-              <div className="text-xs text-gray-500">Total day-leave (days)</div>
-              <div className="text-xl font-semibold">{totalDayEq.toFixed(1)}</div>
-            </div>
-            <div className="p-3 rounded border">
-              <div className="text-xs text-gray-500">Total hour Permission Taken (hrs)</div>
-              <div className="text-xl font-semibold">{totalHourEq}</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Table 1: Day-based leaves */}
-        <div className="card">
-          <h3 className="font-semibold mb-3">Leave (Day-based)</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-gray-600">
-                  <th className="pb-2 px-3">Status</th>
-                  <th className="pb-2 px-3">Count</th>
-                  <th className="pb-2 px-3">Day equivalent</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dayRows.length === 0 ? (
-                  <tr className="border-t"><td className="py-4 px-3 text-gray-500" colSpan={3}>No day-based leave taken.</td></tr>
-                ) : (
-                  <>
-                    {dayRows.map(r => (
-                      <tr key={r.status} className="border-t">
-                        <td className="py-2 px-3">{r.status}</td>
-                        <td className="px-3">{r.count}</td>
-                        <td className="px-3">{r.eq.toFixed(1)}</td>
-                      </tr>
-                    ))}
-                    <tr className="border-t font-medium">
-                      <td className="py-2 px-3">Total</td>
-                      <td className="px-3">{dayRows.reduce((s,r)=>s+r.count,0)}</td>
-                      <td className="px-3">{totalDayEq.toFixed(1)}</td>
-                    </tr>
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Table 2: Hour-based deductions */}
-        <div className="card">
-          <h3 className="font-semibold mb-3">Permission Details</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[600px]">
-              <thead className="bg-gray-50">
-                <tr className="text-left text-gray-600">
-                  <th className="pb-2 px-3">Status</th>
-                  <th className="pb-2 px-3">Count</th>
-                  <th className="pb-2 px-3">Hours</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hourRows.length === 0 ? (
-                  <tr className="border-t"><td className="py-4 px-3 text-gray-500" colSpan={3}>No hour deductions.</td></tr>
-                ) : (
-                  <>
-                    {hourRows.map(r => (
-                      <tr key={r.status} className="border-t">
-                        <td className="py-2 px-3">{r.status}</td>
-                        <td className="px-3">{r.count}</td>
-                        <td className="px-3">{r.eq}</td>
-                      </tr>
-                    ))}
-                    <tr className="border-t font-medium">
-                      <td className="py-2 px-3">Total</td>
-                      <td className="px-3">{hourRows.reduce((s,r)=>s+r.count,0)}</td>
-                      <td className="px-3">{totalHourEq}</td>
-                    </tr>
-                  </>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-    </div>
+    </section>
   );
 }

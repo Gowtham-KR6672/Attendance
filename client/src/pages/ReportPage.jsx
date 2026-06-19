@@ -2,6 +2,24 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api";
 import * as XLSX from "xlsx";
 import {
+  FileText,
+  BarChart2,
+  TrendingUp,
+  Calendar,
+  Download,
+  Save,
+  UploadCloud,
+  Info,
+  Briefcase,
+  List,
+  Layers,
+  Clock,
+  Users,
+  Hash,
+  ChevronDown,
+  ChevronUp
+} from "lucide-react";
+import {
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -168,6 +186,7 @@ export default function ReportPage() {
   const PROCESS_TYPES = ["On Going", "One-Time", "FTE", "Long Time"];
 
   // manual add form
+  const [isManualAddOpen, setIsManualAddOpen] = useState(false);
   const [date, setDate] = useState(() => dateToDDMMYYYY(new Date()));
   const [processName, setProcessName] = useState("");
   const [processType, setProcessType] = useState(""); // ✅ no forced default
@@ -719,16 +738,15 @@ export default function ReportPage() {
   };
 
   return (
-    <div className="w-full px-3 sm:px-6 lg:px-8 py-5 space-y-4">
+    <div className="w-full space-y-4">
       {!!banner.text && (
         <div
-          className={`card border ${
-            banner.type === "error"
-              ? "border-red-300 text-red-700"
-              : banner.type === "success"
+          className={`card border ${banner.type === "error"
+            ? "border-red-300 text-red-700"
+            : banner.type === "success"
               ? "border-green-300 text-green-700"
               : "border-slate-200 text-slate-700"
-          }`}
+            }`}
         >
           <div className="px-3 py-2 text-sm font-medium">{banner.text}</div>
         </div>
@@ -762,13 +780,12 @@ export default function ReportPage() {
 
             {!!manageMsg.text && (
               <div
-                className={`mt-3 border rounded-md px-3 py-2 text-sm ${
-                  manageMsg.type === "error"
-                    ? "border-red-300 text-red-700"
-                    : manageMsg.type === "success"
+                className={`mt-3 border rounded-md px-3 py-2 text-sm ${manageMsg.type === "error"
+                  ? "border-red-300 text-red-700"
+                  : manageMsg.type === "success"
                     ? "border-green-300 text-green-700"
                     : "border-slate-200 text-slate-700"
-                }`}
+                  }`}
               >
                 {manageMsg.text}
               </div>
@@ -856,9 +873,8 @@ export default function ReportPage() {
 
                           <td className="text-right">
                             <button
-                              className={`btn btn-sm ${
-                                updateAllowed ? "btn-primary" : "btn-outline opacity-50 pointer-events-none"
-                              }`}
+                              className={`btn btn-sm ${updateAllowed ? "btn-primary" : "btn-outline opacity-50 pointer-events-none"
+                                }`}
                               onClick={() => saveRowUpdate(r)}
                               disabled={!updateAllowed}
                               title={!updateAllowed ? "Update disabled after 24 hours" : "Update this entry"}
@@ -943,75 +959,129 @@ export default function ReportPage() {
       )}
 
       {/* Manual Add */}
-      <div className="card">
-        <div className="font-semibold mb-3">Manual Add</div>
-
-        <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-12 md:col-span-2">
-            <div className="label mb-1">Date (DD-MM-YYYY)</div>
-            <input className="input w-full" value={date} onChange={(e) => setDate(e.target.value)} />
+      <div className="card border border-slate-200 rounded-xl shadow-sm bg-white p-6 mb-6 transition-all duration-300">
+        <div 
+          className={`flex items-center justify-between cursor-pointer select-none transition-colors ${isManualAddOpen ? 'mb-6' : 'mb-0'}`}
+          onClick={() => setIsManualAddOpen(!isManualAddOpen)}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <FileText size={20} />
+            </div>
+            <h2 className="text-xl font-bold text-blue-600">Manual Add</h2>
           </div>
-
-          <div className="col-span-12 md:col-span-4">
-            <div className="label mb-1">Process Name</div>
-            <input
-              className="input w-full"
-              value={processName}
-              onChange={(e) => setProcessName(e.target.value)}
-              placeholder="e.g. 1785189 - PDF to Excel Data Entry - Banks"
-            />
-          </div>
-
-          <div className="col-span-12 md:col-span-2">
-            <div className="label mb-1">Process Type</div>
-            <select className="select w-full" value={processType} onChange={(e) => setProcessType(e.target.value)}>
-              <option value="">Select...</option>
-              {PROCESS_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="col-span-12 md:col-span-2">
-            <div className="label mb-1">UOM</div>
-            <input className="input w-full" value={uom} onChange={(e) => setUom(e.target.value)} />
-          </div>
-
-          <div className="col-span-12 md:col-span-1">
-            <div className="label mb-1">TAT</div>
-            <input className="input w-full" value={tat} onChange={(e) => setTat(e.target.value)} />
-            <div className="text-[11px] text-slate-500 mt-1">TAT must be ≥ 0</div>
-          </div>
-
-          <div className="col-span-12 md:col-span-2">
-            <div className="label mb-1">Team Hours</div>
-            <input className="input w-full" value={teamHours} onChange={(e) => setTeamHours(e.target.value)} />
-          </div>
-
-          <div className="col-span-12 md:col-span-1">
-            <div className="label mb-1">Team Count</div>
-            <input className="input w-full" value={teamCount} onChange={(e) => setTeamCount(e.target.value)} />
-          </div>
-
-          <div className="col-span-12 md:col-span-6">
-            <div className="label mb-1">Actual Count (Team Hours * TAT)</div>
-            <input className="input w-full" value={actualCount || 0} readOnly />
-          </div>
-
-          <div className="col-span-12 md:col-span-6">
-            <div className="label mb-1">Actual Hours (Team Count / TAT)</div>
-            <input className="input w-full" value={actualHours || 0} readOnly />
+          <div className="text-slate-400 hover:text-slate-600 transition-colors">
+            {isManualAddOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-3">
-          <button className="btn btn-primary" onClick={onSave}>
-            Save
+        {isManualAddOpen && (
+          <div className="animate-in slide-in-from-top-2 fade-in duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Date (DD-MM-YYYY)</label>
+            <div className="relative">
+              <input
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-10"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+              <Calendar size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Process Name</label>
+            <div className="relative">
+              <input
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-10"
+                value={processName}
+                onChange={(e) => setProcessName(e.target.value)}
+                placeholder="e.g. 1785189 - PDF to Excel Data Entry - Banks"
+              />
+              <Briefcase size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Process Type</label>
+            <div className="relative">
+              <select
+                className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium pl-10"
+                value={processType}
+                onChange={(e) => setProcessType(e.target.value)}
+              >
+                <option value="">Select...</option>
+                {PROCESS_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <List size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">UOM</label>
+            <div className="relative">
+              <input className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-10" value={uom} onChange={(e) => setUom(e.target.value)} />
+              <Layers size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">TAT</label>
+            <div className="relative">
+              <input className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-10" value={tat} onChange={(e) => setTat(e.target.value)} />
+              <Clock size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1">TAT must be ≥ 0</div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Team Hours</label>
+            <div className="relative">
+              <input className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-10" value={teamHours} onChange={(e) => setTeamHours(e.target.value)} />
+              <Clock size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Team Count</label>
+            <div className="relative">
+              <input className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-10" value={teamCount} onChange={(e) => setTeamCount(e.target.value)} />
+              <Users size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Actual Count <span className="text-slate-400 font-normal">(Team Hours * TAT)</span></label>
+            <div className="relative">
+              <input className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-sm rounded-lg text-slate-700 font-semibold cursor-not-allowed pl-10" value={actualCount || 0} readOnly />
+              <Hash size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-slate-700 mb-2 block">Actual Hours <span className="text-slate-400 font-normal">(Team Count / TAT)</span></label>
+            <div className="relative">
+              <input className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-sm rounded-lg text-slate-700 font-semibold cursor-not-allowed pl-10" value={actualHours || 0} readOnly />
+              <Clock size={16} className="absolute left-3 top-3 text-[#256eed]" />
+            </div>
+          </div>
+        </div>
+
+        <hr className="border-slate-100 my-4" />
+
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <button className="inline-flex items-center justify-center gap-2 bg-[#256eed] hover:brightness-110 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors text-sm shrink-0 w-full sm:w-auto" onClick={onSave}>
+            <Save size={16} /> Save
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <input
               ref={fileRef}
               type="file"
@@ -1022,309 +1092,309 @@ export default function ReportPage() {
             />
             <label
               htmlFor="bulkUploadInput"
-              className={`btn btn-outline cursor-pointer ${uploading ? "opacity-60 pointer-events-none" : ""}`}
-              title="Upload CSV/XLSX with required headers"
+              className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-[#16a34a] hover:bg-green-700 text-white rounded-lg text-sm font-semibold transition-colors cursor-pointer shrink-0 w-full sm:w-auto ${uploading ? "opacity-60 pointer-events-none" : ""}`}
             >
+              <UploadCloud size={16} />
               {uploading ? "Uploading..." : "Upload CSV/XLSX"}
             </label>
 
-            <div className="text-xs text-slate-500">
-              Headers: Date (DD/MM/YYYY), Process Name, <b>Process Type</b>, UOM, TAT, Team Hours, Team Count
+            <div className="text-[12px] text-slate-500 flex items-center gap-1.5 mt-2 sm:mt-0">
+              <Info size={14} className="text-slate-400 shrink-0" />
+              <span>Headers: Date (DD/MM/YYYY), Process Name, <b>Process Type</b>, UOM, TAT, Team Hours, Team Count</span>
             </div>
           </div>
         </div>
+        </div>
+        )}
       </div>
 
       {/* Graph/Table Section */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Left: TABLE */}
-        <div className="card col-span-12 lg:col-span-8" style={{ maxHeight: 760, overflowY: "auto" }}>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <div>
-              <div className="font-semibold">All Process Monthly Statistics (Totals in Range)</div>
-              <div className="text-xs text-slate-500">
-                Orange: Actual Count + Actual Hours | Blue: Team Count + Team Hours
-              </div>
-              <div className="text-xs font-semibold text-slate-700 mt-1">
-                Total Processes: {totalProcesses} {typeFilter !== "All" ? `(Filtered: ${typeFilter})` : ""}
+      <div className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
+
+        {/* Top: TABLE */}
+        <div className="w-full">
+          <div className="card border border-slate-200 rounded-xl shadow-sm bg-white p-6 flex flex-col h-fit max-h-[800px]">
+
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <BarChart2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-blue-600">All Process Monthly Statistics <span className="text-slate-500 font-normal text-base">(Totals in Range)</span></h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-orange-400 mr-1"></span>Orange: Actual Count + Actual Hours | <span className="inline-block w-2 h-2 rounded-full bg-blue-500 ml-1 mr-1"></span>Blue: Team Count + Team Hours
+                  </p>
+                  <p className="text-xs font-semibold text-slate-700 mt-1">
+                    Total Processes: {totalProcesses} {typeFilter !== "All" ? `(Filtered: ${typeFilter})` : ""}
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-end gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 items-end">
               <div>
-                <div className="label mb-1">Process Type</div>
-                <select className="select" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Process Type</label>
+                <select className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
                   <option value="All">All</option>
                   {PROCESS_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
+                    <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <div className="label mb-1">From (DD-MM-YYYY)</div>
-                <input className="input" value={from} onChange={(e) => setFrom(e.target.value)} />
+                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">From (DD-MM-YYYY)</label>
+                <div className="relative">
+                  <input className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-8" value={from} onChange={(e) => setFrom(e.target.value)} />
+                  <Calendar size={14} className="absolute left-2.5 top-2.5 text-[#256eed]" />
+                </div>
               </div>
+
               <div>
-                <div className="label mb-1">To (DD-MM-YYYY)</div>
-                <input className="input" value={to} onChange={(e) => setTo(e.target.value)} />
-              </div>
-
-              <button className="btn btn-outline" onClick={onApplyRange}>
-                Apply
-              </button>
-
-              <button className="btn btn-outline" onClick={downloadTableCSV}>
-                Download CSV
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-6 mb-2">
-            <Ring value={overall.lagAvg} label="Overall Lag" color="#dc2626" />
-            <Ring value={overall.achievedAvg} label="Overall Achieved" color="#16a34a" />
-          </div>
-
-          <div className="mt-2 overflow-auto border rounded-md" style={{ maxHeight: 520 }}>
-            {tableRows.length ? (
-              <table className="table w-full text-sm">
-                <thead className="sticky top-0 bg-white z-10 shadow-sm">
-                  <tr>
-                    <th className="text-left">Process</th>
-                    <th className="text-left">Type</th>
-                    <th className="text-right">Actual Count</th>
-                    <th className="text-right">Actual Hours</th>
-                    <th className="text-right">Team Count</th>
-                    <th className="text-right">Team Hours</th>
-                    <th className="text-right">Lag %</th>
-                    <th className="text-right">Achieved %</th>
-                    <th className="text-right">Actions</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {tableRows.map((r) => {
-                    const lagOk = Number(r.lag || 0) === 0;
-                    const ach = Number(r.achieved || 0);
-                    const rowKey = `${r.processName}|||${r.processType}`;
-
-                    return (
-                      <tr key={`${r.processName}-${r.processType}`}>
-                        <td className="min-w-[260px]">{r.processName}</td>
-                        <td className="min-w-[110px]">{r.processType}</td>
-
-                        <td className="text-right">{Number(r.actualCount || 0).toFixed(2)}</td>
-                        <td className="text-right">{Number(r.actualHours || 0).toFixed(2)}</td>
-                        <td className="text-right">{Number(r.teamCount || 0).toFixed(2)}</td>
-                        <td className="text-right">{Number(r.teamHours || 0).toFixed(2)}</td>
-
-                        <td className={`text-right font-semibold ${lagOk ? "text-green-700" : "text-red-700"}`}>
-                          {Number(r.lag || 0).toFixed(2)}%
-                        </td>
-
-                        <td className={`text-right font-semibold ${ach > 0 ? "text-green-700" : "text-slate-500"}`}>
-                          {ach.toFixed(2)}%
-                        </td>
-
-                        <td className="text-right">
-                          <button className="btn btn-outline btn-sm" onClick={() => openManage(rowKey)}>
-                            Update / Delete
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            ) : (
-              <div className="h-[360px] grid place-items-center text-slate-500 text-sm">
-                No data for selected range / filter.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Selected Process */}
-        <div className="card col-span-12 lg:col-span-4">
-          {/* Header + Filter */}
-          <div className="flex flex-col gap-2 mb-3">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold">Selected Process Graph</div>
-              <div className="text-xs text-slate-500">{submittedKey ? "Submitted" : "Select & submit"}</div>
-            </div>
-
-            <div className="grid grid-cols-12 gap-2 items-end">
-              <div className="col-span-12">
-                <div className="label mb-1">Process Filter</div>
-                <select className="select w-full" value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)}>
-                  <option value="">Select...</option>
-                  {processOptions.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-span-12 grid grid-cols-12 gap-2">
-                <button
-                  className="btn btn-primary w-full col-span-12"
-                  onClick={async () => {
-                    setBanner({ type: "", text: "" });
-                    if (!selectedKey) return showMsg("Please select a process first.", "error");
-
-                    setSubmittedKey(selectedKey);
-
-                    const { processName: pn, processType: pt } = splitKey(selectedKey);
-                    try {
-                      await loadTrend(pn, pt, from, to);
-                    } catch (e) {
-                      console.error(e);
-                      showMsg(e?.response?.data?.message || "Failed to load comparison data", "error");
-                    }
-                  }}
-                >
-                  Submit
-                </button>
-
-                <button className="btn btn-outline w-full col-span-6" onClick={downloadSelectedProcessCSV}>
-                  Download Totals
-                </button>
-                <button className="btn btn-outline w-full col-span-6" onClick={downloadComparisonCSV}>
-                  Download Compare
-                </button>
-              </div>
-
-              {/* ✅ quick Manage for selected */}
-              {submittedKey ? (
-                <button
-                  className="btn btn-outline w-full col-span-12"
-                  onClick={() => openManage(submittedKey)}
-                  title="Open Update/Delete for selected process"
-                >
-                  Update / Delete (Selected)
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          {/* Selected Process Chart */}
-          <div className="border rounded-xl p-3">
-            <div className="text-sm font-semibold mb-2">Current Totals (In Range)</div>
-
-            <div style={{ width: "100%", height: 240 }}>
-              {!submittedKey ? (
-                <div className="h-full grid place-items-center text-slate-500 text-sm">
-                  Select a process and click <b>Submit</b> to view graph.
-                </div>
-              ) : selectedSeries.length ? (
-                <ResponsiveContainer>
-                  <BarChart data={selectedSeries} margin={{ top: 15, right: 10, left: 0, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="processName" hide />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="actualCount" name="Actual Count" fill="#f97316" />
-                    <Bar dataKey="actualHours" name="Actual Hours" fill="#fdba74" />
-                    <Bar dataKey="teamCount" name="Team Count" fill="#2563eb" />
-                    <Bar dataKey="teamHours" name="Team Hours" fill="#93c5fd" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full grid place-items-center text-slate-500 text-sm">No data for this process in range.</div>
-              )}
-            </div>
-          </div>
-
-          {/* Comparison Section */}
-          <div className="mt-4 border rounded-xl p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <div className="font-semibold text-sm">Last 3 Recent Date Comparison</div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="px-3 py-1 rounded-md text-xs font-bold border border-red-400 bg-white text-slate-900">
-                  Lag: {trendLagBox ? `${trendLagBox.lag.toFixed(2)}%` : "-"} | Achieved:{" "}
-                  {trendLagBox ? `${trendLagBox.achieved.toFixed(2)}%` : "-"}
-                </div>
-
-                <div className="px-3 py-1 rounded-md text-xs font-semibold border border-red-400 bg-white text-slate-900">
-                  Available entries: {availableTrendCount} {availableTrendCount === 1 ? "date" : "dates"}
-                  {availableTrendCount > 3 ? " (showing last 3)" : ""}
+                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">To (DD-MM-YYYY)</label>
+                <div className="relative">
+                  <input className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg text-slate-700 font-medium pl-8" value={to} onChange={(e) => setTo(e.target.value)} />
+                  <Calendar size={14} className="absolute left-2.5 top-2.5 text-[#256eed]" />
                 </div>
               </div>
+
+              <div className="flex gap-2">
+                <button className="flex-1 inline-flex items-center justify-center bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors text-sm" onClick={onApplyRange}>
+                  Apply
+                </button>
+                <button className="flex-1 inline-flex items-center justify-center gap-1.5 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg font-semibold transition-colors text-sm whitespace-nowrap" onClick={downloadTableCSV}>
+                  <Download size={14} /> Download CSV
+                </button>
+              </div>
             </div>
 
-            <div className="text-xs text-slate-500 mb-3">
-              Add the same process (same type) for at least <b>2 different dates</b> to see comparison.
+            <div className="flex items-center gap-8 mb-6">
+              <Ring value={overall.lagAvg} label="Overall Lag" color="#dc2626" />
+              <Ring value={overall.achievedAvg} label="Overall Achieved" color="#16a34a" />
             </div>
 
-            {/* Comparison Chart */}
-            <div style={{ width: "100%", height: 220 }}>
-              {submittedKey && trendPoints.length ? (
-                <ResponsiveContainer>
-                  <BarChart data={trendPoints} margin={{ top: 10, right: 10, left: 0, bottom: 25 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" interval={0} height={30} tick={{ fontSize: 13, fill: "#475569" }} />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="actualCount" name="Actual Count" fill="#f97316" />
-                    <Bar dataKey="actualHours" name="Actual Hours" fill="#fdba74" />
-                    <Bar dataKey="teamCount" name="Team Count" fill="#2563eb" />
-                    <Bar dataKey="teamHours" name="Team Hours" fill="#93c5fd" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full grid place-items-center text-slate-500 text-sm">
-                  {submittedKey ? "No comparison data in range." : "Select a process and submit first."}
-                </div>
-              )}
-            </div>
-
-            {/* Comparison data BELOW graph */}
-            {submittedKey && trendPoints.length ? (
-              <div className="mt-3 overflow-auto border rounded-lg">
-                <table className="table w-full text-xs">
-                  <thead className="sticky top-0 bg-white z-10">
+            <div className="mt-2 overflow-auto border border-slate-200 rounded-lg bg-white min-h-[300px]">
+              {tableRows.length ? (
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
                     <tr>
-                      <th className="text-left">Date</th>
-                      <th className="text-right">Actual Count</th>
-                      <th className="text-right">Actual Hours</th>
-                      <th className="text-right">Team Count</th>
-                      <th className="text-right">Team Hours</th>
-                      <th className="text-right">Lag %</th>
-                      <th className="text-right">Achieved %</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Process</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Type</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Actual Count</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Actual Hours</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Team Count</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Team Hours</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Lag %</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Achieved %</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Actions</th>
                     </tr>
                   </thead>
 
-                  <tbody>
-                    {trendPoints.map((p) => {
-                      const lag = calcLagPercent(p.actualCount, p.teamCount);
-                      const ach = calcAchievedPercent(p.actualCount, p.actualHours, p.teamCount, p.teamHours);
+                  <tbody className="divide-y divide-slate-100">
+                    {tableRows.map((r) => {
+                      const lagOk = Number(r.lag || 0) === 0;
+                      const ach = Number(r.achieved || 0);
+                      const rowKey = `${r.processName}|||${r.processType}`;
 
                       return (
-                        <tr key={p.date}>
-                          <td className="text-left font-medium">{p.date}</td>
-                          <td className="text-right">{Number(p.actualCount || 0).toFixed(2)}</td>
-                          <td className="text-right">{Number(p.actualHours || 0).toFixed(2)}</td>
-                          <td className="text-right">{Number(p.teamCount || 0).toFixed(2)}</td>
-                          <td className="text-right">{Number(p.teamHours || 0).toFixed(2)}</td>
-                          <td className={`text-right font-semibold ${lag === 0 ? "text-green-700" : "text-red-700"}`}>
-                            {lag.toFixed(2)}%
+                        <tr key={`${r.processName}-${r.processType}`} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 text-slate-600 font-medium min-w-[260px]">{r.processName}</td>
+                          <td className="px-4 py-3 text-slate-600 min-w-[110px]">{r.processType}</td>
+
+                          <td className="px-4 py-3 text-slate-600 text-right">{Number(r.actualCount || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-slate-600 text-right">{Number(r.actualHours || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-slate-600 text-right">{Number(r.teamCount || 0).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-slate-600 text-right">{Number(r.teamHours || 0).toFixed(2)}</td>
+
+                          <td className={`px-4 py-3 text-right font-bold ${lagOk ? "text-emerald-600" : "text-red-600"}`}>
+                            {Number(r.lag || 0).toFixed(2)}%
                           </td>
-                          <td className={`text-right font-semibold ${ach > 0 ? "text-green-700" : "text-slate-500"}`}>
+
+                          <td className={`px-4 py-3 text-right font-bold ${ach > 0 ? "text-emerald-600" : "text-slate-400"}`}>
                             {ach.toFixed(2)}%
+                          </td>
+
+                          <td className="px-4 py-3 text-right">
+                            <button className="px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-md text-xs font-semibold transition-colors" onClick={() => openManage(rowKey)}>
+                              Update / Delete
+                            </button>
                           </td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+              ) : (
+                <div className="relative w-full h-full min-h-[300px] flex flex-col items-center justify-center text-blue-500 font-medium text-sm bg-slate-50/50 border-0 rounded-lg overflow-hidden">
+                  <div className="absolute -top-10 -left-10 w-96 h-96 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+                  <div className="absolute -top-10 -right-10 w-96 h-96 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+                  <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+
+                  <div className="relative z-10 flex flex-col items-center">
+                    <svg className="w-12 h-12 text-blue-400 animate-pulse mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span>No data for selected range / filter.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom: Selected Process */}
+        <div className="w-full">
+          <div className="card border border-slate-200 rounded-xl shadow-sm bg-white p-6 flex flex-col h-fit">
+
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <TrendingUp size={16} />
+                </div>
+                <h3 className="text-lg font-bold text-blue-600">Selected Process Graph</h3>
               </div>
-            ) : null}
+              <div className="text-xs text-slate-500">{submittedKey ? "Submitted" : "Select & submit"}</div>
+            </div>
+
+            <div className="flex flex-wrap items-end gap-3 mb-6">
+              <div className="flex-1 min-w-[200px]">
+                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">Process Filter</label>
+                <select className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-colors text-sm rounded-lg appearance-none text-slate-700 font-medium h-[38px]" value={selectedKey} onChange={(e) => setSelectedKey(e.target.value)}>
+                  <option value="">Select...</option>
+                  {processOptions.map((p) => (
+                    <option key={p.key} value={p.key}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                className="bg-[#256eed] hover:brightness-110 text-white px-5 py-2 rounded-lg font-semibold transition-colors text-sm whitespace-nowrap h-[38px]"
+                onClick={async () => {
+                  setBanner({ type: "", text: "" });
+                  if (!selectedKey) return showMsg("Please select a process first.", "error");
+
+                  setSubmittedKey(selectedKey);
+
+                  const { processName: pn, processType: pt } = splitKey(selectedKey);
+                  try {
+                    await loadTrend(pn, pt, from, to);
+                  } catch (e) {
+                    console.error(e);
+                    showMsg(e?.response?.data?.message || "Failed to load comparison data", "error");
+                  }
+                }}
+              >
+                Submit
+              </button>
+
+              <button className="inline-flex items-center justify-center gap-1.5 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap h-[38px]" onClick={downloadSelectedProcessCSV}>
+                <Download size={14} /> Download Totals
+              </button>
+              <button className="inline-flex items-center justify-center gap-1.5 bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap h-[38px]" onClick={downloadComparisonCSV}>
+                <Download size={14} /> Download Compare
+              </button>
+
+              {/* ✅ quick Manage for selected */}
+              {submittedKey ? (
+                <button
+                  className="inline-flex items-center justify-center gap-1.5 border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap h-[38px]"
+                  onClick={() => openManage(submittedKey)}
+                  title="Open Update/Delete for selected process"
+                >
+                  Update / Delete
+                </button>
+              ) : null}
+            </div>
+
+            {/* Selected Process Chart */}
+            <div className="border border-slate-100 rounded-xl bg-white shadow-sm p-4 mb-4">
+              <div className="text-sm font-bold text-slate-800 mb-3">Current Totals (In Range)</div>
+
+              <div style={{ width: "100%", height: 180 }}>
+                {!submittedKey ? (
+                  <div className="relative h-full flex flex-col items-center justify-center text-blue-500 font-medium text-xs text-center px-4 py-6 bg-slate-50/50 border border-blue-100 rounded-lg overflow-hidden">
+                    <div className="absolute -top-10 -left-10 w-96 h-96 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+                    <div className="absolute -top-10 -right-10 w-96 h-96 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+
+                    <div className="relative z-10 flex flex-col items-center">
+                      <svg className="w-10 h-10 text-blue-400 animate-bounce mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                      </svg>
+                      <span>Select a process and click <br /><b className="text-blue-600">Submit</b><br /> to view graph.</span>
+                    </div>
+                  </div>
+                ) : selectedSeries.length ? (
+                  <ResponsiveContainer>
+                    <BarChart data={selectedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="processName" hide />
+                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: "#f8fafc" }} />
+                      <Bar dataKey="actualCount" name="Actual Count" fill="#f97316" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="actualHours" name="Actual Hours" fill="#fdba74" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="teamCount" name="Team Count" fill="#2563eb" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="teamHours" name="Team Hours" fill="#93c5fd" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full grid place-items-center text-slate-400 text-xs">No data for this process in range.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Comparison Section */}
+            <div className="border border-slate-100 rounded-xl bg-white shadow-sm p-4 flex-1 flex flex-col">
+              <div className="flex flex-col gap-2 mb-4">
+                <div className="font-bold text-slate-800 text-sm">Last 3 Recent Date Comparison</div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="px-2 py-0.5 rounded text-[11px] font-semibold border border-orange-200 bg-orange-50 text-orange-700">
+                    Lag: {trendLagBox ? `${trendLagBox.lag.toFixed(2)}%` : "-"} | Achieved:{" "}
+                    {trendLagBox ? `${trendLagBox.achieved.toFixed(2)}%` : "-"}
+                  </div>
+
+                  <div className="px-2 py-0.5 rounded text-[11px] font-semibold border border-blue-200 bg-blue-50 text-blue-700">
+                    Available entries: {availableTrendCount} {availableTrendCount === 1 ? "date" : "dates"}
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500">
+                  Add the same process (same type) for at least <b>2 different dates</b> to see comparison.
+                </div>
+              </div>
+
+              {/* Comparison Chart */}
+              <div className="flex-1 min-h-[180px]" style={{ width: "100%" }}>
+                {submittedKey && trendPoints.length ? (
+                  <ResponsiveContainer>
+                    <BarChart data={trendPoints} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="date" interval={0} height={20} tick={{ fontSize: 10, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                      <Tooltip cursor={{ fill: "#f8fafc" }} />
+                      <Bar dataKey="actualCount" name="Actual Count" fill="#f97316" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="actualHours" name="Actual Hours" fill="#fdba74" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="teamCount" name="Team Count" fill="#2563eb" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="teamHours" name="Team Hours" fill="#93c5fd" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="relative w-full h-full min-h-[180px] flex flex-col items-center justify-center text-blue-500 font-medium text-xs text-center bg-slate-50/50 border border-blue-100 rounded-lg overflow-hidden">
+                    <div className="absolute -top-10 -left-10 w-96 h-96 bg-blue-400/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob"></div>
+                    <div className="absolute -top-10 -right-10 w-96 h-96 bg-blue-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-300/20 rounded-full mix-blend-multiply filter blur-3xl opacity-70 animate-blob animation-delay-4000"></div>
+
+                    <div className="relative z-10 flex flex-col items-center">
+                      <svg className="w-10 h-10 text-blue-400 animate-pulse mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                      <span>{submittedKey ? "No comparison data in range." : "Select a process and submit first."}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
