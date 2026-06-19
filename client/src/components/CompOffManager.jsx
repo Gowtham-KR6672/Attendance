@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api';
 import { User, Download, CalendarPlus, ClipboardList, Plus, ArrowUpDown, ChevronDown, Calendar, Save, Trash2 } from 'lucide-react';
+import LoadingScreen from "./LoadingScreen";
 
 const pad = (n) => String(n).padStart(2,'0');
 const toYMD = (d) => {
@@ -55,6 +56,7 @@ const EmptyIllustration = () => (
 
 export default function CompOffManager() {
   const [employees, setEmployees] = useState([]);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [selectedEmp, setSelectedEmp] = useState('');
 
   const [rows, setRows] = useState([]); 
@@ -73,9 +75,13 @@ export default function CompOffManager() {
       try {
         const { data } = await api.get('/employees');
         setEmployees(data);
-        if (data?.length) setSelectedEmp(data[0]._id);
+        if (data?.length) {
+          setSelectedEmp(data[0]._id);
+        }
       } catch (err) {
         console.error(err);
+      } finally {
+        setInitialLoad(false);
       }
     })();
   }, []);
@@ -184,6 +190,10 @@ export default function CompOffManager() {
       URL.revokeObjectURL(a.href);
     }
   };
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Comp-Offs" subtext="Fetching the employee comp-off records..." />;
+  }
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '../api';
 import { FileText, Users, Calendar, Download, Info, ChevronDown, PieChart, ClipboardList, Database, FileSpreadsheet } from 'lucide-react';
+import LoadingScreen from "./LoadingScreen";
 
 const LiveExportAnimation = ({ selected, from, to }) => (
   <div className="mt-6 p-12 border border-slate-100 rounded-xl bg-slate-50/80 overflow-hidden relative flex flex-col items-center justify-center">
@@ -234,14 +235,19 @@ const mapStatus = (raw) => {
 
 export default function FullExport() {
   const [employees, setEmployees] = useState([]);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [selected, setSelected] = useState('ALL'); // 'ALL' | <empId>
   const [from, setFrom] = useState(monthRange().from);
   const [to, setTo] = useState(monthRange().to);
 
   useEffect(() => {
     (async () => {
-      const { data } = await api.get('/employees');
-      setEmployees(data || []);
+      try {
+        const { data } = await api.get('/employees');
+        setEmployees(data || []);
+      } finally {
+        setInitialLoad(false);
+      }
     })();
   }, []);
 
@@ -452,8 +458,12 @@ export default function FullExport() {
     }
   };
 
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Export Options" subtext="Fetching the employee export records..." />;
+  }
+
   return (
-    <div className="w-full animate-in fade-in duration-300">
+    <div className="w-full space-y-6 animate-in fade-in duration-300">
       <div className="card border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden p-0">
 
         {/* Header Block */}

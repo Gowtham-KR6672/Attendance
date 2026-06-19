@@ -4,6 +4,7 @@ import { Parser } from "hot-formula-parser";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { PlusCircle, Settings, Download, BarChart2, Edit, Plus, Trash2, List, CheckCircle } from "lucide-react";
+import LoadingScreen from "./LoadingScreen";
 
 import {
   BarChart,
@@ -53,6 +54,7 @@ const PIE_COLORS = [
 export default function ProcessManager() {
   const [processName, setProcessName] = useState("");
   const [processes, setProcesses] = useState([]);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [selectedId, setSelectedId] = useState("");
 
   const selected = useMemo(
@@ -85,8 +87,12 @@ export default function ProcessManager() {
   const [downloadMode, setDownloadMode] = useState("selected"); // selected | all
 
   const loadProcesses = async () => {
-    const { data } = await api.get("/processes");
-    setProcesses(Array.isArray(data) ? data : []);
+    try {
+      const { data } = await api.get("/processes");
+      setProcesses(Array.isArray(data) ? data : []);
+    } finally {
+      setInitialLoad(false);
+    }
   };
 
   const loadEntries = async (pid) => {
@@ -656,6 +662,10 @@ export default function ProcessManager() {
     if (downloadMode === "all") return downloadAllProcessesExcel();
     return downloadSelectedExcel();
   };
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Processes" subtext="Fetching the process records..." />;
+  }
 
   return (
     <div className="space-y-4">

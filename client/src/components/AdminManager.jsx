@@ -13,6 +13,7 @@ import {
   X,
   ChevronDown
 } from "lucide-react";
+import LoadingScreen from "./LoadingScreen";
 
 const TEAM_TYPES = ["On Going", "One Time", "FTE"];
 const SHIFTS = ["Day Shift", "Night Shift"];
@@ -26,6 +27,7 @@ const ROLES = [
 export default function AdminManager() {
   const role = localStorage.getItem("role");
   const [list, setList] = useState([]);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   // create form
@@ -64,8 +66,14 @@ export default function AdminManager() {
   };
 
   const load = async () => {
-    const { data } = await api.get("/admins");
-    setList(data || []);
+    try {
+      const { data } = await api.get("/admins");
+      setList(data || []);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setInitialLoad(false);
+    }
   };
 
   useEffect(() => {
@@ -259,6 +267,16 @@ export default function AdminManager() {
       </div>
     );
   };
+
+  const sortedList = [...filteredList].sort((a,b) => {
+    if(a.role === 'super' && b.role !== 'super') return -1;
+    if(a.role !== 'super' && b.role === 'super') return 1;
+    return 0;
+  });
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Admins" subtext="Fetching the admin list..." />;
+  }
 
   return (
     <div className="w-full space-y-6">

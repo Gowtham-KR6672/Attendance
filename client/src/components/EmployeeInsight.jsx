@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
+import LoadingScreen from "./LoadingScreen";
 import {
   Bar,
   BarChart,
@@ -95,6 +96,7 @@ export default function EmployeeInsight() {
   const [empId, setEmpId] = useState("");
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedEmpId, setHighlightedEmpId] = useState(null);
   const dropdownRef = useRef(null);
@@ -163,6 +165,7 @@ export default function EmployeeInsight() {
       const list = Array.isArray(data) ? data : [];
       setEmployees(list);
       if (list.length) setEmpId(list[0]._id);
+      setInitialLoad(false);
     });
     return () => {
       active = false;
@@ -185,6 +188,7 @@ export default function EmployeeInsight() {
     } finally {
       setLoading(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empId, from, to]);
 
   useEffect(() => {
@@ -255,6 +259,10 @@ export default function EmployeeInsight() {
       [MapPin, "Present Location", employee.presentLocation || "-"],
     ]
     : [];
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Details" subtext="Fetching employee details..." />;
+  }
 
   return (
     <section className="insight-page">

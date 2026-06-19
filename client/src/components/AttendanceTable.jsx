@@ -6,6 +6,7 @@
 // 4) Filtering stays same (employees already scoped by backend)
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import LoadingScreen from "./LoadingScreen";
 import { api } from "../api";
 
 const STATUS_LIST = [
@@ -370,6 +371,10 @@ export default function AttendanceTable() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordsLoaded, from, to, employees.length, dates.length]);
+
+  if (!recordsLoaded) {
+    return <LoadingScreen text="Loading Attendance" subtext="Fetching the latest records..." />;
+  }
 
   return (
     <div className="space-y-4">

@@ -17,8 +17,10 @@ import {
   Users,
   Hash,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertCircle
 } from "lucide-react";
+import LoadingScreen from "../components/LoadingScreen";
 import {
   ResponsiveContainer,
   BarChart,
@@ -233,6 +235,7 @@ export default function ReportPage() {
   const [manageLoading, setManageLoading] = useState(false);
   const [manageMsg, setManageMsg] = useState({ type: "", text: "" });
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: "", label: "" });
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const TAT = Number(tat);
   const TH = Number(teamHours);
@@ -397,9 +400,10 @@ export default function ReportPage() {
       } catch (e) {
         console.error(e);
         showMsg(e?.response?.data?.message || "Failed to load data", "error");
+      } finally {
+        setInitialLoad(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onApplyRange = async () => {
@@ -736,6 +740,10 @@ export default function ReportPage() {
 
     downloadCSV(filename, [headers, ...body]);
   };
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Reports" subtext="Gathering productivity details..." />;
+  }
 
   return (
     <div className="w-full space-y-4">

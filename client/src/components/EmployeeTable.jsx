@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { api } from "../api";
+import LoadingScreen from "./LoadingScreen";
 
 /** Helpers */
 const pad = (n) => String(n).padStart(2, "0");
@@ -84,6 +85,7 @@ const LAPTOP_STATUS = ["PC", "Laptop"];
 
 export default function EmployeeTable() {
   const [employees, setEmployees] = useState([]);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   /** ✅ current login */
   const role = useMemo(() => localStorage.getItem("role") || "", []);
@@ -170,6 +172,7 @@ export default function EmployeeTable() {
       if (canTransfer) {
         await loadAdmins();
       }
+      setInitialLoad(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -413,6 +416,9 @@ export default function EmployeeTable() {
     if (arr.length) return arr.join(", ");
     return a.allowedTeamType || "No Team";
   };
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Team" subtext="Fetching the team details..." />;
+  }
 
   return (
     <>
@@ -474,7 +480,7 @@ export default function EmployeeTable() {
         </div>
       )}
 
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         {/* TOP: Add / Update form */}
         <div className="card w-full border border-blue-50 transition-all duration-300" id="employee-form" style={{ borderRadius: '15px', background: 'linear-gradient(145deg, #ffffff 0%, #f9fbff 100%)', boxShadow: '0 8px 30px rgba(0,0,0,0.04)' }}>
           <div className={`flex items-center justify-between cursor-pointer ${formExpanded ? 'mb-6' : ''}`} onClick={() => setFormExpanded(!formExpanded)}>

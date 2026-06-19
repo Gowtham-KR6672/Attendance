@@ -167,7 +167,7 @@ export default function EmployeeChartsModal({ onClose }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
           <div>
-            <div className="text-lg font-semibold">Employee Chart Reports</div>
+            <div className="text-lg font-semibold text-blue-600">Employee Chart Reports</div>
             <div className="text-xs text-gray-500">Normal 2D pie chart by status</div>
           </div>
           <button className="btn btn-outline" onClick={onClose}>Close</button>
@@ -228,13 +228,13 @@ export default function EmployeeChartsModal({ onClose }) {
                   </div>
 
                   <div className="col-span-2">
-                    <button className="btn btn-primary w-full" onClick={loadData} disabled={loading}>
+                    <button className="btn w-full bg-blue-600 hover:bg-blue-700 text-white border-none" onClick={loadData} disabled={loading}>
                       {loading ? 'Loading…' : 'Generate'}
                     </button>
                   </div>
 
                   <div className="col-span-2 mt-2 rounded-xl border p-3 bg-gray-50 flex items-center justify-between">
-                    <div className="text-sm font-semibold">Total Count</div>
+                    <div className="text-sm font-semibold text-blue-600">Total Count</div>
                     <div className="text-xl font-bold">{totalCount}</div>
                   </div>
                 </div>
@@ -245,7 +245,7 @@ export default function EmployeeChartsModal({ onClose }) {
             <div className="col-span-12 lg:col-span-7">
               <div className="rounded-2xl border bg-white p-4 shadow-sm">
                 <div>
-                  <div className="font-semibold text-sm">Leave Chart ({selectedName})</div>
+                  <div className="font-semibold text-sm text-blue-600">Leave Chart ({selectedName})</div>
                   <div className="text-xs text-gray-500">Normal 2D pie chart (no 3D)</div>
                 </div>
 
@@ -338,7 +338,7 @@ export default function EmployeeChartsModal({ onClose }) {
                       </div>
 
                       <div className="mt-3 rounded-xl bg-gray-50 border px-3 py-2 flex items-center justify-between">
-                        <span className="text-sm font-semibold">Total</span>
+                        <span className="text-sm font-semibold text-blue-600">Total</span>
                         <span className="text-sm font-bold">{totalCount}</span>
                       </div>
                     </div>

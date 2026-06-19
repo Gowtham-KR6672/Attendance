@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 import { Calendar, User, Search, Save, ClipboardX } from 'lucide-react';
+import LoadingScreen from "./LoadingScreen";
 
 const LEAVE_STATUSES = [
   'CASUAL LEAVE','SICK LEAVE','SESSION_01 LEAVE','SESSION_02 LEAVE',
@@ -19,6 +20,7 @@ const monthToRange = (ym) => {
 
 export default function LeaveSummary() {
   const [employees, setEmployees] = useState([]);
+  const [initialLoad, setInitialLoad] = useState(true);
   
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0,7));
   const [{from, to}, setRange] = useState(monthToRange(new Date().toISOString().slice(0,7)));
@@ -39,6 +41,8 @@ export default function LeaveSummary() {
         if (data?.length) setDetailsEmpId(data[0]._id);
       } catch (err) {
         console.error(err);
+      } finally {
+        setInitialLoad(false);
       }
     })();
   }, []);
@@ -170,6 +174,10 @@ export default function LeaveSummary() {
       </g>
     </svg>
   );
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Summary" subtext="Fetching the leave details..." />;
+  }
 
   return (
     <div className="w-full space-y-6 animate-in fade-in duration-300">
