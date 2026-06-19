@@ -5,6 +5,7 @@ import {
   Download, Calendar, ChevronDown, Search, Filter, 
   RefreshCw, RotateCcw, Edit2, MoreVertical, Info, ArrowUpDown, Check, Save, X
 } from "lucide-react";
+import LoadingScreen from "./LoadingScreen";
 
 const STATUS_LIST = [
   "PRESENT", "WFH", "ABSENT", "CASUAL LEAVE", "SICK LEAVE", "SESSION_01 LEAVE", "SESSION_02 LEAVE", "COMP-OFF", "PHONE INTIMATION", "NO INTIMATION", "NCNS", "L.O.P.", "HOLIDAY", "RELIEVED", "1 Hr Per MORN", "2 Hr Per MORN", "1 Hr Per EVE", "2 Hr Per EVE", "SUNDAY", "3rd Saturday Week off",
@@ -102,6 +103,7 @@ export default function HomeDashboard() {
   const [msg, setMsg] = useState("");
   const [search, setSearch] = useState("");
   const [selectedAdminFilter, setSelectedAdminFilter] = useState("ALL");
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -143,6 +145,8 @@ export default function HomeDashboard() {
     } catch (e) {
       console.error(e);
       setMsg("Failed to load dashboard data.");
+    } finally {
+      setInitialLoad(false);
     }
   };
 
@@ -291,6 +295,10 @@ export default function HomeDashboard() {
       )}
     </div>
   );
+
+  if (initialLoad) {
+    return <LoadingScreen text="Loading Dashboard" subtext="Fetching your daily overview..." />;
+  }
 
   return (
     <div className="space-y-6 w-full">
