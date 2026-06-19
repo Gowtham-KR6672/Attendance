@@ -1,5 +1,5 @@
 import express from "express";
-import Employee from "../models/Employee.js";
+import Employee, { DESIGNATIONS } from "../models/Employee.js";
 import Admin from "../models/Admin.js";
 import { requireAuth, employeeScopeFilter } from "../middleware/auth.js";
 
@@ -7,6 +7,19 @@ const router = express.Router();
 router.use(requireAuth);
 
 const TEAM_TYPES = ["On Going", "One Time", "FTE"];
+
+const normalizeDesignation = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  return String(value).trim();
+};
+
+const validateDesignation = (value) => {
+  const designation = normalizeDesignation(value);
+  return {
+    designation,
+    valid: designation === null || DESIGNATIONS.includes(designation),
+  };
+};
 
 // helper: admin_tl team check
 const isTeamAllowedForTL = (user, teamType) => {
@@ -58,6 +71,16 @@ router.get("/", async (req, res) => {
  */
 router.post("/", async (req, res) => {
   try {
+    const designationResult = validateDesignation(req.body.designation);
+    if (!designationResult.valid) {
+      return res.status(400).json({
+        message: `Invalid designation: "${designationResult.designation}"`,
+        allowedValues: DESIGNATIONS,
+      });
+    }
+
+    req.body.designation = designationResult.designation;
+
     // ✅ enforce TL team scope if admin_tl creates
     if (req.user.role === "admin_tl") {
       if (req.body.teamType && !isTeamAllowedForTL(req.user, req.body.teamType)) {
@@ -183,6 +206,18 @@ router.put("/:id/reassign", async (req, res) => {
  */
 router.put("/:id", async (req, res) => {
   try {
+    if (Object.prototype.hasOwnProperty.call(req.body, "designation")) {
+      const designationResult = validateDesignation(req.body.designation);
+      if (!designationResult.valid) {
+        return res.status(400).json({
+          message: `Invalid designation: "${designationResult.designation}"`,
+          allowedValues: DESIGNATIONS,
+        });
+      }
+
+      req.body.designation = designationResult.designation;
+    }
+
     const target = await Employee.findById(req.params.id);
     if (!target) return res.status(404).json({ message: "Employee not found" });
 

@@ -86,8 +86,14 @@ router.get("/me", requireAuth, async (req, res) => {
 });
 
 // GET /api/auth/has-super
-router.get("/has-super", requireAuth, (req, res) => {
-  res.json({ ok: true, isSuper: req.user?.role === "super" });
+// Public bootstrap check used before login. It exposes only whether setup is needed.
+router.get("/has-super", async (_req, res) => {
+  try {
+    const hasSuper = !!(await Admin.exists({ role: "super" }));
+    res.json({ ok: true, hasSuper });
+  } catch (err) {
+    res.status(500).json({ message: err?.message || "Server error" });
+  }
 });
 
 export default router;
