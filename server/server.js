@@ -23,11 +23,14 @@ import reportRouter from "./routes/report.js";
 import chatRouter from "./routes/chat.js";
 import ChatMessage from "./models/ChatMessage.js";
 import Admin from "./models/Admin.js";
+import Employee, { DESIGNATIONS } from "./models/Employee.js";
 import { verifySocketToken } from "./socket/authSocket.js";
 import processRouter from "./routes/processes.js";
 
 const app = express();
 await connectDB();
+
+const API_BUILD = "2026-06-19-designation-v2";
 
 app.use(helmet());
 app.use(morgan("dev"));
@@ -88,7 +91,18 @@ const limiter = rateLimit({
 });
 app.use(limiter);
 
-app.get("/", (_req, res) => res.send("Attendance Admin API OK"));
+app.get("/", (_req, res) =>
+  res.send(`Attendance Admin API OK - ${API_BUILD}`)
+);
+
+app.get("/api/health", (_req, res) => {
+  res.json({
+    ok: true,
+    build: API_BUILD,
+    designationValues: Employee.schema.path("designation").enumValues,
+    processAnalystAccepted: DESIGNATIONS.includes("Process Analyst"),
+  });
+});
 
 app.use("/api/auth", authRouter);
 app.use("/api/admins", adminsRouter);

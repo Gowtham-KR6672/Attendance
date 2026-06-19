@@ -1,5 +1,16 @@
 import mongoose from 'mongoose';
 
+export const DESIGNATIONS = [
+  'ATL',
+  'SME',
+  'Senior Process Analyst',
+  'Process Analyst',
+  'Trainee Process Analyst',
+  'Senior Process Associate',
+  'Process Associate',
+  'Trainee Process Associate'
+];
+
 const employeeSchema = new mongoose.Schema(
   {
     // Core
@@ -23,7 +34,11 @@ const employeeSchema = new mongoose.Schema(
 
     designation: {
       type: String,
-      enum: ['ATL', 'SME', 'Senior Process Analyst', 'Process Analyst', 'Trainee Process Analyst', 'Senior Process Associate', 'Process Associate', 'Trainee Process Associate'],
+      enum: DESIGNATIONS,
+      set: (value) => {
+        if (value === null || value === undefined || value === '') return null;
+        return String(value).trim();
+      },
       default: null
     },
 
