@@ -109,7 +109,7 @@ export default function Login({ onAuthed }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  placeholder="admin@example.com"
+                  placeholder="Enter your Email address"
                 />
               </div>
 
@@ -159,7 +159,7 @@ export default function Login({ onAuthed }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  placeholder="admin@example.com"
+                  placeholder="Enter your Email address"
                 />
               </div>
 
