@@ -12,7 +12,7 @@ import EmployeeChartsModal from "../components/EmployeeChartsModal";
 // ✅ NEW
 import ProcessManager from "../components/ProcessManager";
 import FloatingChatButton from "../components/FloatingChatButton";
-import ReportPage from "../pages/ReportPage"; // ✅ ensure path correct: client/src/pages/ReportPage.jsx
+import ClientReportPage from "../pages/ClientReportPage"; 
 import HomeDashboard from "../components/HomeDashboard";
 
 export default function Dashboard() {
@@ -90,7 +90,7 @@ export default function Dashboard() {
       {tab === "process" && <ProcessManager />}
 
       {/* ✅ NEW */}
-      {tab === "report" && <ReportPage />}
+      {tab === "report" && <ClientReportPage />}
 
       {tab === "admins" && role === "super" && <AdminManager />}
 
