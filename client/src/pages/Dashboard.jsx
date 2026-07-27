@@ -28,7 +28,6 @@ export default function Dashboard() {
     { id: "leave", label: "Leave Report", icon: CalendarOff },
     { id: "compoff", label: "Comp-Off", icon: Scale },
     { id: "alldetails", label: "All Details", icon: List },
-    { id: "process", label: "Process", icon: Settings },
     { id: "report", label: "Report", icon: BarChart2 },
   ];
   if (role === "super") {
