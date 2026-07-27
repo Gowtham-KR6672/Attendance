@@ -55,9 +55,9 @@ const isAllowedLocalOrigin = (origin) => {
   try {
     const url = new URL(origin);
     const isLocalHost =
-      url.hostname === "localhost" || url.hostname === "127.0.0.1";
+      url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname.startsWith("192.168.");
     const isVitePort = /^51\d\d$/.test(url.port);
-    return isLocalHost && isVitePort;
+    return (isLocalHost && isVitePort) || url.hostname.startsWith("192.168.");
   } catch {
     return false;
   }
